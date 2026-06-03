@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "FoundMe" },
+      { name: "description", content: "Lumina Vault is a private, secure personal media website for viewing high-quality photos and videos." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "FoundMe" },
+      { property: "og:description", content: "Lumina Vault is a private, secure personal media website for viewing high-quality photos and videos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "FoundMe" },
+      { name: "twitter:description", content: "Lumina Vault is a private, secure personal media website for viewing high-quality photos and videos." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/Ts0t6wOwJ5SmWowbPl533y77eku2/social-images/social-1780479953761-scary-theme-tz8.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/Ts0t6wOwJ5SmWowbPl533y77eku2/social-images/social-1780479953761-scary-theme-tz8.webp" },
     ],
     links: [
       {
