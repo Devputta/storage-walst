@@ -13,6 +13,7 @@ export type CollectionCardData = {
 };
 
 export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: boolean }) {
+  const { data: coverUrl } = useSignedUrl(c.cover_url);
   return (
     <motion.div
       whileHover={{ y: -4 }}
