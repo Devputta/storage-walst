@@ -1,0 +1,106 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { sha256 } from "@/lib/auth";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+
+export function NewCollectionDialog() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [isInvisible, setIsInvisible] = useState(false);
+  const [pin, setPin] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const reset = () => {
+    setTitle(""); setIsPrivate(false); setIsInvisible(false); setPin("");
+  };
+
+  const create = async () => {
+    if (!title.trim()) return;
+    setBusy(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Not signed in");
+      const pin_hash = isPrivate && pin ? await sha256(pin) : null;
+      const { error } = await supabase.from("collections").insert({
+        user_id: u.user.id,
+        title: title.trim(),
+        is_private: isPrivate,
+        is_invisible: isInvisible,
+        pin_hash,
+      });
+      if (error) throw error;
+      toast.success("Collection created");
+      qc.invalidateQueries({ queryKey: ["collections"] });
+      reset(); setOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button className="group relative aspect-[4/5] rounded-3xl border border-dashed border-white/15 bg-white/[0.02] transition hover:border-primary/40 hover:bg-white/[0.04]">
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+            <div className="glass flex h-14 w-14 items-center justify-center rounded-full transition group-hover:scale-110">
+              <Plus className="h-6 w-6 text-primary" />
+            </div>
+            <span className="font-display text-lg">New collection</span>
+          </div>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="glass-strong border-white/10 sm:max-w-md rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">New collection</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-5 pt-2">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input
+              autoFocus
+              placeholder="Summer Moments"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-11 rounded-xl bg-input/40"
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
+            <div>
+              <Label className="cursor-pointer">Lock with PIN</Label>
+              <p className="text-xs text-muted-foreground">Blur previews until unlocked.</p>
+            </div>
+            <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
+          </div>
+          {isPrivate && (
+            <Input
+              type="password"
+              placeholder="Choose a PIN"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="h-11 rounded-xl bg-input/40"
+            />
+          )}
+          <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
+            <div>
+              <Label className="cursor-pointer">Invisible mode</Label>
+              <p className="text-xs text-muted-foreground">Hide from main grid.</p>
+            </div>
+            <Switch checked={isInvisible} onCheckedChange={setIsInvisible} />
+          </div>
+          <Button onClick={create} disabled={busy || !title.trim()} className="w-full h-11 rounded-xl">
+            Create
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
