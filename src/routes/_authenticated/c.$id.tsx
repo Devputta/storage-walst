@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Heart, Trash2, ImageIcon, Video, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { Button } from "@/components/ui/button";
+
 import { UploadDialog } from "@/components/UploadDialog";
 import { PinDialog } from "@/components/PinDialog";
 import { toast } from "sonner";
@@ -346,5 +346,3 @@ function Lightbox({
   );
 }
 
-// silence unused warning
-void Button;
