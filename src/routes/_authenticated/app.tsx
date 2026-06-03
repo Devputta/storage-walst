@@ -20,7 +20,7 @@ type Row = {
   cover_url: string | null;
   is_private: boolean;
   is_invisible: boolean;
-  pin_hash: string | null;
+  has_pin: boolean;
 };
 
 function AppPage() {
@@ -32,7 +32,7 @@ function AppPage() {
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,cover_url,is_private,is_invisible,pin_hash")
+        .select("id,title,cover_url,is_private,is_invisible,has_pin")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Row[];
@@ -93,7 +93,7 @@ function AppPage() {
             <NewCollectionDialog />
             {filtered.map((c) => {
               const card: CollectionCardData = c;
-              const locked = !!(c.is_private && c.pin_hash && !unlocked[c.id]);
+              const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
               return (
                 <div key={c.id} onClick={() => locked && setUnlocked((u) => ({ ...u, [c.id]: false }))}>
                   <CollectionCard c={card} locked={locked} />

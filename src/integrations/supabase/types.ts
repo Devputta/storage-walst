@@ -14,11 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      collection_unlocks: {
+        Row: {
+          collection_id: string
+          created_at: string
+          expires_at: string
+          user_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          expires_at: string
+          user_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          expires_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       collections: {
         Row: {
           cover_url: string | null
           created_at: string
           description: string | null
+          has_pin: boolean
           id: string
           is_invisible: boolean
           is_private: boolean
@@ -31,6 +53,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          has_pin?: boolean
           id?: string
           is_invisible?: boolean
           is_private?: boolean
@@ -43,6 +66,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          has_pin?: boolean
           id?: string
           is_invisible?: boolean
           is_private?: boolean

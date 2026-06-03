@@ -1,29 +1,44 @@
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
-import { sha256 } from "@/lib/auth";
+import { unlockCollection } from "@/lib/collections.functions";
 
 export function PinDialog({
   open,
-  expectedHash,
+  collectionId,
   onUnlock,
 }: {
   open: boolean;
-  expectedHash: string;
+  collectionId: string;
   onUnlock: () => void;
 }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const unlockFn = useServerFn(unlockCollection);
+  const qc = useQueryClient();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const h = await sha256(pin);
-    if (h === expectedHash) {
-      setError(""); setPin(""); onUnlock();
-    } else {
-      setError("Incorrect PIN");
+    setBusy(true);
+    try {
+      const r = await unlockFn({ data: { collectionId, pin } });
+      if (r.ok) {
+        setError("");
+        setPin("");
+        qc.invalidateQueries({ queryKey: ["media", collectionId] });
+        onUnlock();
+      } else {
+        setError("Incorrect PIN");
+      }
+    } catch {
+      setError("Unable to verify PIN");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -46,7 +61,9 @@ export function PinDialog({
             className="h-11 rounded-xl bg-input/40 text-center text-lg tracking-[0.5em]"
           />
           {error && <p className="text-center text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="h-11 w-full rounded-xl">Unlock</Button>
+          <Button type="submit" disabled={busy || !pin} className="h-11 w-full rounded-xl">
+            {busy ? "Unlocking…" : "Unlock"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

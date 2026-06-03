@@ -34,7 +34,7 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
       const total = files.length;
-      let coverUrl: string | null = null;
+      let coverPath: string | null = null;
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const ext = f.name.split(".").pop() ?? "bin";
@@ -55,14 +55,13 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
           mime_type: f.type,
           size_bytes: f.size,
         });
-        if (!coverUrl && mediaType === "image") {
-          const { data: s } = await supabase.storage.from("media").createSignedUrl(path, 60 * 60 * 24 * 365);
-          coverUrl = s?.signedUrl ?? null;
+        if (!coverPath && mediaType === "image") {
+          coverPath = path;
         }
         setProgress(Math.round(((i + 1) / total) * 100));
       }
-      if (coverUrl) {
-        await supabase.from("collections").update({ cover_url: coverUrl }).eq("id", collectionId).is("cover_url", null);
+      if (coverPath) {
+        await supabase.from("collections").update({ cover_url: coverPath }).eq("id", collectionId).is("cover_url", null);
       }
       toast.success(`Uploaded ${total} item${total > 1 ? "s" : ""}`);
       qc.invalidateQueries({ queryKey: ["media", collectionId] });
