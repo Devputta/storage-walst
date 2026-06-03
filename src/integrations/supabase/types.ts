@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      collections: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_invisible: boolean
+          is_private: boolean
+          pin_hash: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_invisible?: boolean
+          is_private?: boolean
+          pin_hash?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_invisible?: boolean
+          is_private?: boolean
+          pin_hash?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      media: {
+        Row: {
+          collection_id: string | null
+          created_at: string
+          description: string | null
+          height: number | null
+          id: string
+          is_favorite: boolean
+          media_type: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          title: string | null
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          collection_id?: string | null
+          created_at?: string
+          description?: string | null
+          height?: number | null
+          id?: string
+          is_favorite?: boolean
+          media_type: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          title?: string | null
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          collection_id?: string | null
+          created_at?: string
+          description?: string | null
+          height?: number | null
+          id?: string
+          is_favorite?: boolean
+          media_type?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          title?: string | null
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          pin_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          pin_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          pin_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
