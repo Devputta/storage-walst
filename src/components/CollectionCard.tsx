@@ -24,9 +24,9 @@ export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: b
         params={{ id: c.id }}
         className="group relative block aspect-[4/5] overflow-hidden rounded-3xl ring-1 ring-white/10"
       >
-        {c.cover_url ? (
+        {coverUrl ? (
           <img
-            src={c.cover_url}
+            src={coverUrl}
             alt={c.title}
             className={`absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105 ${
               locked ? "blur-2xl scale-110" : ""
