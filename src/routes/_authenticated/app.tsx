@@ -20,7 +20,7 @@ type Row = {
   cover_url: string | null;
   is_private: boolean;
   is_invisible: boolean;
-  pin_hash: string | null;
+  has_pin: boolean;
 };
 
 function AppPage() {
