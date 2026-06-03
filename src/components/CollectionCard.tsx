@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Lock, Eye } from "lucide-react";
 import { motion } from "motion/react";
+import { useSignedUrl } from "@/lib/storage";
 
 export type CollectionCardData = {
   id: string;
