@@ -10,6 +10,7 @@ import { UploadDialog } from "@/components/UploadDialog";
 import { PinDialog } from "@/components/PinDialog";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
+import { useSignedUrl } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/c/$id")({
   component: CollectionPage,
@@ -28,22 +29,8 @@ type Collection = {
   id: string;
   title: string;
   is_private: boolean;
-  pin_hash: string | null;
+  has_pin: boolean;
 };
-
-export function useSignedUrl(path: string | null | undefined) {
-  return useQuery({
-    queryKey: ["sign", path],
-    queryFn: async () => {
-      if (!path) return null;
-      const { data, error } = await supabase.storage.from("media").createSignedUrl(path, 3600);
-      if (error) throw error;
-      return data.signedUrl;
-    },
-    enabled: !!path,
-    staleTime: 1000 * 60 * 50,
-  });
-}
 
 function CollectionPage() {
   const { id } = Route.useParams();
@@ -58,7 +45,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Collection | null> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,is_private,pin_hash")
+        .select("id,title,is_private,has_pin")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -66,7 +53,7 @@ function CollectionPage() {
     },
   });
 
-  const needsPin = !!(collection?.is_private && collection?.pin_hash && !unlocked);
+  const needsPin = !!(collection?.is_private && collection?.has_pin && !unlocked);
 
   const { data: media } = useQuery({
     queryKey: ["media", id],
@@ -92,7 +79,7 @@ function CollectionPage() {
     <AppShell>
       <PinDialog
         open={needsPin}
-        expectedHash={collection?.pin_hash ?? ""}
+        collectionId={id}
         onUnlock={() => setUnlocked(true)}
       />
 
@@ -345,4 +332,3 @@ function Lightbox({
     </motion.div>
   );
 }
-
