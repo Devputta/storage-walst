@@ -29,7 +29,7 @@ export function PinDialog({
 
   return (
     <Dialog open={open}>
-      <DialogContent className="glass-strong border-white/10 sm:max-w-sm rounded-3xl" hideClose>
+      <DialogContent className="glass-strong border-white/10 sm:max-w-sm rounded-3xl [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
             <Lock className="h-6 w-6 text-primary" />
