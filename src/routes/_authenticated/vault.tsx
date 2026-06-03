@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { useSignedUrl } from "./c.$id";
+import { useSignedUrl } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/vault")({
   head: () => ({ meta: [{ title: "Vault — Lumen" }] }),
