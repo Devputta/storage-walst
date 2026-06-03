@@ -32,7 +32,7 @@ function AppPage() {
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,cover_url,is_private,is_invisible,pin_hash")
+        .select("id,title,cover_url,is_private,is_invisible,has_pin")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Row[];
