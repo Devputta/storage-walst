@@ -62,7 +62,7 @@ export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: b
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-5">
-          <h3 className="font-display text-2xl leading-tight text-white">{c.title}</h3>
+          <h3 className="font-display text-2xl leading-tight text-white">{displayTitle}</h3>
           {typeof c.count === "number" && (
             <p className="mt-1 text-xs text-white/60">{c.count} items</p>
           )}
