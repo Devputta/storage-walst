@@ -20,10 +20,11 @@ export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: b
     <motion.div
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-        aria-label={displayTitle}
+    >
       <Link
         to="/c/$id"
         params={{ id: c.id }}
+        aria-label={displayTitle}
         className="group relative block aspect-[4/5] overflow-hidden rounded-3xl ring-1 ring-white/10"
       >
         {coverUrl ? (
