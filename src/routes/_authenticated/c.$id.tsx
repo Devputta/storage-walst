@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 
 import { UploadDialog } from "@/components/UploadDialog";
 import { PinDialog } from "@/components/PinDialog";
+import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { useSignedUrl } from "@/lib/storage";
@@ -28,6 +29,7 @@ type Media = {
 type Collection = {
   id: string;
   title: string;
+  nickname: string | null;
   is_private: boolean;
   has_pin: boolean;
 };
@@ -45,7 +47,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Collection | null> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,is_private,has_pin")
+        .select("id,title,nickname,is_private,has_pin")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -98,7 +100,7 @@ function CollectionPage() {
           animate={{ opacity: 1, y: 0 }}
           className="font-display text-5xl md:text-6xl"
         >
-          {collection?.title ?? "Collection"}
+          {needsPin ? (collection?.nickname ?? "Locked") : (collection?.title ?? "Collection")}
         </motion.h1>
 
         <div className="flex items-center gap-2">
@@ -115,6 +117,13 @@ function CollectionPage() {
               </button>
             ))}
           </div>
+          {!needsPin && collection && (
+            <CollectionSettingsDialog
+              collectionId={id}
+              currentNickname={collection.nickname}
+              hasPin={collection.has_pin}
+            />
+          )}
           {!needsPin && <UploadDialog collectionId={id} />}
         </div>
       </section>
@@ -187,7 +196,7 @@ function MediaTile({
           m.media_type === "image" ? (
             <img src={url} alt={m.title ?? ""} className="w-full" loading="lazy" />
           ) : (
-            <video src={url} className="w-full" muted playsInline preload="metadata" />
+            <video src={`${url}#t=0.5`} className="w-full bg-black" muted playsInline preload="metadata" />
           )
         ) : (
           <div className="aspect-[3/4] w-full animate-pulse bg-white/5" />
