@@ -14,13 +14,17 @@ export function NewCollectionDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [nickname, setNickname] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [isInvisible, setIsInvisible] = useState(false);
   const [pin, setPin] = useState("");
+  const [recoveryQ, setRecoveryQ] = useState("");
+  const [recoveryA, setRecoveryA] = useState("");
   const [busy, setBusy] = useState(false);
 
   const reset = () => {
-    setTitle(""); setIsPrivate(false); setIsInvisible(false); setPin("");
+    setTitle(""); setNickname(""); setIsPrivate(false); setIsInvisible(false);
+    setPin(""); setRecoveryQ(""); setRecoveryA("");
   };
 
   const create = async () => {
@@ -30,12 +34,19 @@ export function NewCollectionDialog() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
       const pin_hash = isPrivate && pin ? await sha256(pin) : null;
+      const recovery_answer_hash =
+        isPrivate && recoveryQ.trim() && recoveryA.trim()
+          ? await sha256(recoveryA.trim().toLowerCase())
+          : null;
       const { error } = await supabase.from("collections").insert({
         user_id: u.user.id,
         title: title.trim(),
+        nickname: nickname.trim() || null,
         is_private: isPrivate,
         is_invisible: isInvisible,
         pin_hash,
+        recovery_question: isPrivate && recoveryQ.trim() ? recoveryQ.trim() : null,
+        recovery_answer_hash,
       });
       if (error) throw error;
       toast.success("Collection created");
