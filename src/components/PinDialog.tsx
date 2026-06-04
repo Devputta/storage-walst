@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
-import { unlockCollection } from "@/lib/collections.functions";
+import { Lock, KeyRound } from "lucide-react";
+import {
+  unlockCollection,
+  getRecoveryQuestion,
+  recoverCollectionPin,
+} from "@/lib/collections.functions";
 
 export function PinDialog({
   open,
@@ -16,13 +20,31 @@ export function PinDialog({
   collectionId: string;
   onUnlock: () => void;
 }) {
+  const [step, setStep] = useState<"pin" | "recover">("pin");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
+  const [newPin, setNewPin] = useState("");
+
   const unlockFn = useServerFn(unlockCollection);
+  const getQ = useServerFn(getRecoveryQuestion);
+  const recoverFn = useServerFn(recoverCollectionPin);
   const qc = useQueryClient();
 
-  const submit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!open) {
+      setStep("pin");
+      setPin("");
+      setAnswer("");
+      setNewPin("");
+      setError("");
+    }
+  }, [open]);
+
+  const submitPin = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
@@ -42,29 +64,117 @@ export function PinDialog({
     }
   };
 
+  const startRecovery = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await getQ({ data: { collectionId } });
+      if (!r.question) {
+        setError("No recovery set for this collection.");
+        return;
+      }
+      setQuestion(r.question);
+      setStep("recover");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const r = await recoverFn({ data: { collectionId, answer, newPin } });
+      if (r.ok) {
+        const u = await unlockFn({ data: { collectionId, pin: newPin } });
+        if (u.ok) {
+          qc.invalidateQueries({ queryKey: ["media", collectionId] });
+          qc.invalidateQueries({ queryKey: ["collections"] });
+          onUnlock();
+        } else {
+          setError("PIN reset but couldn't unlock");
+        }
+      } else {
+        setError("Wrong answer");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Dialog open={open}>
-      <DialogContent className="glass-strong border-white/10 sm:max-w-sm rounded-3xl [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent
+        className="glass-strong border-white/10 sm:max-w-sm rounded-3xl [&>button]:hidden"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
-            <Lock className="h-6 w-6 text-primary" />
+            {step === "pin" ? (
+              <Lock className="h-6 w-6 text-primary" />
+            ) : (
+              <KeyRound className="h-6 w-6 text-primary" />
+            )}
           </div>
-          <DialogTitle className="text-center font-display text-2xl">Locked collection</DialogTitle>
+          <DialogTitle className="text-center font-display text-2xl">
+            {step === "pin" ? "Locked collection" : "Recover access"}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3 pt-2">
-          <Input
-            autoFocus
-            type="password"
-            placeholder="Enter PIN"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            className="h-11 rounded-xl bg-input/40 text-center text-lg tracking-[0.5em]"
-          />
-          {error && <p className="text-center text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={busy || !pin} className="h-11 w-full rounded-xl">
-            {busy ? "Unlocking…" : "Unlock"}
-          </Button>
-        </form>
+
+        {step === "pin" ? (
+          <form onSubmit={submitPin} className="space-y-3 pt-2">
+            <Input
+              autoFocus
+              type="password"
+              placeholder="Enter PIN"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="h-11 rounded-xl bg-input/40 text-center text-lg tracking-[0.5em]"
+            />
+            {error && <p className="text-center text-sm text-destructive">{error}</p>}
+            <Button type="submit" disabled={busy || !pin} className="h-11 w-full rounded-xl">
+              {busy ? "Unlocking…" : "Unlock"}
+            </Button>
+            <button
+              type="button"
+              onClick={startRecovery}
+              disabled={busy}
+              className="block w-full text-center text-xs text-muted-foreground transition hover:text-foreground"
+            >
+              Forgot PIN?
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={submitRecovery} className="space-y-3 pt-2">
+            <p className="rounded-xl bg-white/5 px-3 py-2 text-center text-sm">{question}</p>
+            <Input
+              autoFocus
+              placeholder="Your answer"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              className="h-11 rounded-xl bg-input/40"
+            />
+            <Input
+              type="password"
+              placeholder="Choose a new PIN"
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value)}
+              className="h-11 rounded-xl bg-input/40 text-center tracking-[0.4em]"
+            />
+            {error && <p className="text-center text-sm text-destructive">{error}</p>}
+            <Button type="submit" disabled={busy || !answer || !newPin} className="h-11 w-full rounded-xl">
+              {busy ? "Resetting…" : "Reset PIN & unlock"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setStep("pin"); setError(""); }}
+              className="block w-full text-center text-xs text-muted-foreground transition hover:text-foreground"
+            >
+              Back to PIN
+            </button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
