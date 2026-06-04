@@ -6,6 +6,7 @@ import { useSignedUrl } from "@/lib/storage";
 export type CollectionCardData = {
   id: string;
   title: string;
+  nickname?: string | null;
   cover_url: string | null;
   is_private: boolean;
   is_invisible: boolean;
@@ -14,11 +15,12 @@ export type CollectionCardData = {
 
 export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: boolean }) {
   const { data: coverUrl } = useSignedUrl(c.cover_url);
+  const displayTitle = locked && c.nickname ? c.nickname : c.title;
   return (
     <motion.div
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-    >
+        aria-label={displayTitle}
       <Link
         to="/c/$id"
         params={{ id: c.id }}
