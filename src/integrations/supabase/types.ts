@@ -44,7 +44,10 @@ export type Database = {
           id: string
           is_invisible: boolean
           is_private: boolean
+          nickname: string | null
           pin_hash: string | null
+          recovery_answer_hash: string | null
+          recovery_question: string | null
           title: string
           updated_at: string
           user_id: string
@@ -57,7 +60,10 @@ export type Database = {
           id?: string
           is_invisible?: boolean
           is_private?: boolean
+          nickname?: string | null
           pin_hash?: string | null
+          recovery_answer_hash?: string | null
+          recovery_question?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -70,7 +76,10 @@ export type Database = {
           id?: string
           is_invisible?: boolean
           is_private?: boolean
+          nickname?: string | null
           pin_hash?: string | null
+          recovery_answer_hash?: string | null
+          recovery_question?: string | null
           title?: string
           updated_at?: string
           user_id?: string
