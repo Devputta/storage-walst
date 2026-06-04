@@ -129,14 +129,6 @@ function AuthPage() {
             minLength={6}
             className="h-11 rounded-xl bg-input/40"
           />
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="h-11 rounded-xl bg-input/40"
-          />
           <Button type="submit" disabled={busy} className="h-11 w-full rounded-xl text-base">
             {mode === "signin" ? "Sign in" : "Create account"}
           </Button>
