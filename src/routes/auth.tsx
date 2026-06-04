@@ -14,11 +14,19 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const USERNAME_DOMAIN = "users.lumen.app";
+
+function toEmail(input: string) {
+  const v = input.trim().toLowerCase();
+  if (v.includes("@")) return v;
+  return `${v.replace(/[^a-z0-9_.-]/g, "")}@${USERNAME_DOMAIN}`;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const { session } = useSession();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -28,16 +36,27 @@ function AuthPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const email = toEmail(identifier);
+    if (!email || !email.includes("@") || email.startsWith("@")) {
+      toast.error("Enter a username or email");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
+        const displayName = identifier.includes("@")
+          ? identifier.split("@")[0]
+          : identifier.trim();
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/app" },
+          options: {
+            emailRedirectTo: window.location.origin + "/app",
+            data: { display_name: displayName },
+          },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account.");
+        toast.success("Account created — you're in.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -92,10 +111,12 @@ function AuthPage() {
 
         <form onSubmit={onSubmit} className="space-y-3">
           <Input
-            type="email"
-            placeholder="you@private.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            placeholder={mode === "signup" ? "Choose a username" : "Username or email"}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
             className="h-11 rounded-xl bg-input/40"
           />
