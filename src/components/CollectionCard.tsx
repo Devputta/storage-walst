@@ -6,6 +6,7 @@ import { useSignedUrl } from "@/lib/storage";
 export type CollectionCardData = {
   id: string;
   title: string;
+  nickname?: string | null;
   cover_url: string | null;
   is_private: boolean;
   is_invisible: boolean;
@@ -14,6 +15,7 @@ export type CollectionCardData = {
 
 export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: boolean }) {
   const { data: coverUrl } = useSignedUrl(c.cover_url);
+  const displayTitle = locked && c.nickname ? c.nickname : c.title;
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -22,6 +24,7 @@ export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: b
       <Link
         to="/c/$id"
         params={{ id: c.id }}
+        aria-label={displayTitle}
         className="group relative block aspect-[4/5] overflow-hidden rounded-3xl ring-1 ring-white/10"
       >
         {coverUrl ? (
@@ -59,7 +62,7 @@ export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: b
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-5">
-          <h3 className="font-display text-2xl leading-tight text-white">{c.title}</h3>
+          <h3 className="font-display text-2xl leading-tight text-white">{displayTitle}</h3>
           {typeof c.count === "number" && (
             <p className="mt-1 text-xs text-white/60">{c.count} items</p>
           )}

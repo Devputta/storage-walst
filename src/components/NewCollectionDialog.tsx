@@ -14,13 +14,17 @@ export function NewCollectionDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [nickname, setNickname] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [isInvisible, setIsInvisible] = useState(false);
   const [pin, setPin] = useState("");
+  const [recoveryQ, setRecoveryQ] = useState("");
+  const [recoveryA, setRecoveryA] = useState("");
   const [busy, setBusy] = useState(false);
 
   const reset = () => {
-    setTitle(""); setIsPrivate(false); setIsInvisible(false); setPin("");
+    setTitle(""); setNickname(""); setIsPrivate(false); setIsInvisible(false);
+    setPin(""); setRecoveryQ(""); setRecoveryA("");
   };
 
   const create = async () => {
@@ -30,12 +34,19 @@ export function NewCollectionDialog() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
       const pin_hash = isPrivate && pin ? await sha256(pin) : null;
+      const recovery_answer_hash =
+        isPrivate && recoveryQ.trim() && recoveryA.trim()
+          ? await sha256(recoveryA.trim().toLowerCase())
+          : null;
       const { error } = await supabase.from("collections").insert({
         user_id: u.user.id,
         title: title.trim(),
+        nickname: nickname.trim() || null,
         is_private: isPrivate,
         is_invisible: isInvisible,
         pin_hash,
+        recovery_question: isPrivate && recoveryQ.trim() ? recoveryQ.trim() : null,
+        recovery_answer_hash,
       });
       if (error) throw error;
       toast.success("Collection created");
@@ -73,6 +84,15 @@ export function NewCollectionDialog() {
               className="h-11 rounded-xl bg-input/40"
             />
           </div>
+          <div className="space-y-2">
+            <Label>Nickname <span className="text-muted-foreground">(optional)</span></Label>
+            <Input
+              placeholder="Shown instead of the real name when locked"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              className="h-11 rounded-xl bg-input/40"
+            />
+          </div>
           <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
             <div>
               <Label className="cursor-pointer">Lock with PIN</Label>
@@ -81,13 +101,32 @@ export function NewCollectionDialog() {
             <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
           </div>
           {isPrivate && (
-            <Input
-              type="password"
-              placeholder="Choose a PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="h-11 rounded-xl bg-input/40"
-            />
+            <div className="space-y-3 rounded-xl bg-white/[0.03] p-3">
+              <Input
+                type="password"
+                placeholder="Choose a PIN"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                className="h-11 rounded-xl bg-input/40"
+              />
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Recovery (in case you forget)
+                </Label>
+                <Input
+                  placeholder="Recovery question (e.g. First pet's name?)"
+                  value={recoveryQ}
+                  onChange={(e) => setRecoveryQ(e.target.value)}
+                  className="h-11 rounded-xl bg-input/40"
+                />
+                <Input
+                  placeholder="Answer"
+                  value={recoveryA}
+                  onChange={(e) => setRecoveryA(e.target.value)}
+                  className="h-11 rounded-xl bg-input/40"
+                />
+              </div>
+            </div>
           )}
           <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
             <div>

@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 type Row = {
   id: string;
   title: string;
+  nickname: string | null;
   cover_url: string | null;
   is_private: boolean;
   is_invisible: boolean;
@@ -32,7 +33,7 @@ function AppPage() {
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,cover_url,is_private,is_invisible,has_pin")
+        .select("id,title,nickname,cover_url,is_private,is_invisible,has_pin")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Row[];
