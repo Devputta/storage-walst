@@ -84,6 +84,15 @@ export function NewCollectionDialog() {
               className="h-11 rounded-xl bg-input/40"
             />
           </div>
+          <div className="space-y-2">
+            <Label>Nickname <span className="text-muted-foreground">(optional)</span></Label>
+            <Input
+              placeholder="Shown instead of the real name when locked"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              className="h-11 rounded-xl bg-input/40"
+            />
+          </div>
           <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
             <div>
               <Label className="cursor-pointer">Lock with PIN</Label>
@@ -92,13 +101,32 @@ export function NewCollectionDialog() {
             <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
           </div>
           {isPrivate && (
-            <Input
-              type="password"
-              placeholder="Choose a PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="h-11 rounded-xl bg-input/40"
-            />
+            <div className="space-y-3 rounded-xl bg-white/[0.03] p-3">
+              <Input
+                type="password"
+                placeholder="Choose a PIN"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                className="h-11 rounded-xl bg-input/40"
+              />
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Recovery (in case you forget)
+                </Label>
+                <Input
+                  placeholder="Recovery question (e.g. First pet's name?)"
+                  value={recoveryQ}
+                  onChange={(e) => setRecoveryQ(e.target.value)}
+                  className="h-11 rounded-xl bg-input/40"
+                />
+                <Input
+                  placeholder="Answer"
+                  value={recoveryA}
+                  onChange={(e) => setRecoveryA(e.target.value)}
+                  className="h-11 rounded-xl bg-input/40"
+                />
+              </div>
+            </div>
           )}
           <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
             <div>
