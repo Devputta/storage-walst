@@ -148,10 +148,13 @@ function CollectionPage() {
                 key={m.id}
                 m={m}
                 onOpen={() => setLightboxIndex(i)}
-                onFavorite={async () => {
-                  await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
-                  qc.invalidateQueries({ queryKey: ["media", id] });
-                  qc.invalidateQueries({ queryKey: ["favorites"] });
+                onFavorite={() => {
+                  vault.request(async () => {
+                    await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
+                    toast.success(m.is_favorite ? "Removed from Vault" : "Added to Vault");
+                    qc.invalidateQueries({ queryKey: ["media", id] });
+                    qc.invalidateQueries({ queryKey: ["favorites"] });
+                  });
                 }}
                 onDelete={async () => {
                   if (!confirm("Delete this item?")) return;
