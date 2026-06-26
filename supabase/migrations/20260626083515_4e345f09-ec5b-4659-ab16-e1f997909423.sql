@@ -1,0 +1,1 @@
+REVOKE INSERT (pin_hash, recovery_answer_hash, recovery_question), UPDATE (pin_hash, recovery_answer_hash, recovery_question) ON public.collections FROM authenticated, anon;

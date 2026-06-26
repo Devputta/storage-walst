@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { sha256 } from "@/lib/auth";
+import { setCollectionPin, setRecoveryQuestion } from "@/lib/collections.functions";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -33,22 +33,27 @@ export function NewCollectionDialog() {
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
-      const pin_hash = isPrivate && pin ? await sha256(pin) : null;
-      const recovery_answer_hash =
-        isPrivate && recoveryQ.trim() && recoveryA.trim()
-          ? await sha256(recoveryA.trim().toLowerCase())
-          : null;
-      const { error } = await supabase.from("collections").insert({
-        user_id: u.user.id,
-        title: title.trim(),
-        nickname: nickname.trim() || null,
-        is_private: isPrivate,
-        is_invisible: isInvisible,
-        pin_hash,
-        recovery_question: isPrivate && recoveryQ.trim() ? recoveryQ.trim() : null,
-        recovery_answer_hash,
-      });
+      const { data: created, error } = await supabase
+        .from("collections")
+        .insert({
+          user_id: u.user.id,
+          title: title.trim(),
+          nickname: nickname.trim() || null,
+          is_private: isPrivate,
+          is_invisible: isInvisible,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      if (isPrivate && pin && created) {
+        const res = await setCollectionPin({ data: { collectionId: created.id, newPin: pin } });
+        if (!res.ok) throw new Error("Failed to set PIN");
+        if (recoveryQ.trim() && recoveryA.trim()) {
+          await setRecoveryQuestion({
+            data: { collectionId: created.id, question: recoveryQ.trim(), answer: recoveryA.trim() },
+          });
+        }
+      }
       toast.success("Collection created");
       qc.invalidateQueries({ queryKey: ["collections"] });
       reset(); setOpen(false);
