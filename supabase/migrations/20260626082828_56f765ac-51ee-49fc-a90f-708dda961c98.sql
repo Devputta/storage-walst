@@ -1,0 +1,1 @@
+REVOKE SELECT (pin_hash, recovery_answer_hash) ON public.collections FROM authenticated, anon;
