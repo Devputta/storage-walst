@@ -118,6 +118,28 @@ export function CollectionSettingsDialog({
             </div>
           </div>
 
+          {!hasPin && (
+            <div className="space-y-2 rounded-xl bg-white/[0.03] p-3">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Set a PIN to lock this collection
+              </Label>
+              <Input
+                type="password"
+                placeholder="New PIN"
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value)}
+                className="h-11 rounded-xl bg-input/40"
+              />
+              <Button
+                onClick={doSetPin}
+                disabled={busy || !newPin}
+                className="h-10 w-full rounded-xl"
+              >
+                Enable lock
+              </Button>
+            </div>
+          )}
+
           {hasPin && (
             <>
               <div className="space-y-2 rounded-xl bg-white/[0.03] p-3">
