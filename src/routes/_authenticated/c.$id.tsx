@@ -196,7 +196,15 @@ function MediaTile({
           m.media_type === "image" ? (
             <img src={url} alt={m.title ?? ""} className="w-full" loading="lazy" />
           ) : (
-            <video src={`${url}#t=0.5`} className="w-full bg-black" muted playsInline preload="metadata" />
+            <video
+              src={url}
+              className="w-full bg-black"
+              muted
+              loop
+              autoPlay
+              playsInline
+              preload="auto"
+            />
           )
         ) : (
           <div className="aspect-[3/4] w-full animate-pulse bg-white/5" />
