@@ -128,17 +128,23 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
               >
                 <ImageIcon className="mr-1.5 h-4 w-4" /> Select files
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => folderInputRef.current?.click()}
-                className="rounded-full"
-              >
-                <FolderOpen className="mr-1.5 h-4 w-4" /> Select folder
-              </Button>
+              {!isMobile && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => folderInputRef.current?.click()}
+                  className="rounded-full"
+                >
+                  <FolderOpen className="mr-1.5 h-4 w-4" /> Select folder
+                </Button>
+              )}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Photos and videos — no item limit</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {isMobile
+                ? "Tip: in the picker, tap Select then choose as many photos/videos as you want. Folder picking isn't supported on mobile."
+                : "Photos and videos — no item limit"}
+            </p>
           </div>
 
           {files.length > 0 && (
