@@ -8,6 +8,7 @@ import { Upload, X, FolderOpen, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function UploadDialog({ collectionId }: { collectionId: string }) {
   const qc = useQueryClient();
