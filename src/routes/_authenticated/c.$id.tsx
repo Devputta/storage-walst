@@ -48,6 +48,7 @@ function CollectionPage() {
   const [filter, setFilter] = useState<"all" | "image" | "video">("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [unlocked, setUnlocked] = useState(false);
+  const vault = useVaultUnlock();
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
