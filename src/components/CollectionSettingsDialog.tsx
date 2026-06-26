@@ -11,10 +11,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   changeCollectionPin,
+  setCollectionPin,
   setRecoveryQuestion,
 } from "@/lib/collections.functions";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ export function CollectionSettingsDialog({
   const [ra, setRa] = useState("");
   const [busy, setBusy] = useState(false);
   const changePin = useServerFn(changeCollectionPin);
+  const setPinFn = useServerFn(setCollectionPin);
   const setRecovery = useServerFn(setRecoveryQuestion);
 
   const saveNickname = async () => {
@@ -64,6 +66,18 @@ export function CollectionSettingsDialog({
     setCurPin(""); setNewPin("");
   };
 
+  const doSetPin = async () => {
+    if (!newPin) return;
+    setBusy(true);
+    const r = await setPinFn({ data: { collectionId, newPin } });
+    setBusy(false);
+    if (!r.ok) return toast.error("Failed to set PIN");
+    toast.success("Lock enabled");
+    setNewPin("");
+    qc.invalidateQueries({ queryKey: ["collection", collectionId] });
+    qc.invalidateQueries({ queryKey: ["collections"] });
+  };
+
   const doSaveRecovery = async () => {
     if (!rq.trim() || !ra.trim()) return;
     setBusy(true);
@@ -79,11 +93,11 @@ export function CollectionSettingsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary" size="icon" className="rounded-full">
-          <Settings className="h-4 w-4" />
+        <Button variant="secondary" className="rounded-full">
+          <Lock className="mr-1.5 h-4 w-4" /> {hasPin ? "Lock" : "Set PIN"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass-strong border-white/10 sm:max-w-md rounded-3xl">
+      <DialogContent className="glass-strong border-white/10 sm:max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">Lock settings</DialogTitle>
         </DialogHeader>
