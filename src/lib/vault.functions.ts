@@ -51,5 +51,5 @@ export const verifyVaultPin = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!row?.pin_hash) return { ok: false as const };
     const hash = await sha256Hex(data.pin);
-    return { ok: (hash === row.pin_hash) as const };
+    return { ok: hash === row.pin_hash };
   });
