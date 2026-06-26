@@ -45,39 +45,39 @@
 :root {
   --radius: 1rem;
 
-  /* Cinematic dark — onyx with warm gold + amethyst glow */
-  --background: oklch(0.14 0.012 280);
-  --foreground: oklch(0.96 0.01 90);
+  /* Cool emerald / ink — deep forest with neon mint glow */
+  --background: oklch(0.16 0.025 165);
+  --foreground: oklch(0.97 0.02 160);
 
-  --card: oklch(0.18 0.015 280);
-  --card-foreground: oklch(0.96 0.01 90);
+  --card: oklch(0.21 0.03 170);
+  --card-foreground: oklch(0.97 0.02 160);
 
-  --popover: oklch(0.16 0.015 280);
-  --popover-foreground: oklch(0.96 0.01 90);
+  --popover: oklch(0.19 0.03 170);
+  --popover-foreground: oklch(0.97 0.02 160);
 
-  --primary: oklch(0.82 0.13 75);              /* warm gold */
-  --primary-foreground: oklch(0.16 0.02 280);
+  --primary: oklch(0.82 0.17 165);              /* neon mint #3ddc97 */
+  --primary-foreground: oklch(0.15 0.03 170);
 
-  --secondary: oklch(0.24 0.02 280);
-  --secondary-foreground: oklch(0.96 0.01 90);
+  --secondary: oklch(0.27 0.035 175);
+  --secondary-foreground: oklch(0.97 0.02 160);
 
-  --muted: oklch(0.22 0.018 280);
-  --muted-foreground: oklch(0.68 0.02 280);
+  --muted: oklch(0.24 0.025 175);
+  --muted-foreground: oklch(0.72 0.04 170);
 
-  --accent: oklch(0.62 0.18 310);              /* amethyst */
-  --accent-foreground: oklch(0.98 0.01 280);
+  --accent: oklch(0.66 0.14 195);               /* glacier teal */
+  --accent-foreground: oklch(0.12 0.02 175);
 
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 90);
 
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.82 0.13 75 / 50%);
+  --ring: oklch(0.82 0.17 165 / 55%);
 
-  --glass: oklch(0.22 0.02 280 / 50%);
+  --glass: oklch(0.22 0.035 175 / 55%);
   --glass-border: oklch(1 0 0 / 10%);
-  --aurora-1: oklch(0.62 0.18 310);
-  --aurora-2: oklch(0.82 0.13 75);
+  --aurora-1: oklch(0.82 0.17 165);
+  --aurora-2: oklch(0.55 0.13 200);
 }
 
 .dark { color-scheme: dark; }
