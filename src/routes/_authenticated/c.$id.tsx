@@ -280,16 +280,9 @@ function Lightbox({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-2xl"
       onClick={onClose}
     >
-      <div className="absolute right-5 top-5 z-10 flex gap-2">
+      <div className="absolute right-5 top-5 z-10 flex gap-2" onClick={(e) => e.stopPropagation()}>
         {url && (
-          <a
-            href={url}
-            download
-            onClick={(e) => e.stopPropagation()}
-            className="glass-strong flex h-10 w-10 items-center justify-center rounded-full"
-          >
-            <Download className="h-4 w-4" />
-          </a>
+          <DownloadMenu url={url} item={current} />
         )}
         <button
           onClick={onClose}
