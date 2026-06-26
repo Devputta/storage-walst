@@ -12,6 +12,13 @@ import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog"
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { useSignedUrl } from "@/lib/storage";
+import { useVaultUnlock } from "@/components/VaultUnlock";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/c/$id")({
   component: CollectionPage,
@@ -41,6 +48,7 @@ function CollectionPage() {
   const [filter, setFilter] = useState<"all" | "image" | "video">("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [unlocked, setUnlocked] = useState(false);
+  const vault = useVaultUnlock();
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
@@ -140,10 +148,13 @@ function CollectionPage() {
                 key={m.id}
                 m={m}
                 onOpen={() => setLightboxIndex(i)}
-                onFavorite={async () => {
-                  await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
-                  qc.invalidateQueries({ queryKey: ["media", id] });
-                  qc.invalidateQueries({ queryKey: ["favorites"] });
+                onFavorite={() => {
+                  vault.request(async () => {
+                    await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
+                    toast.success(m.is_favorite ? "Removed from Vault" : "Added to Vault");
+                    qc.invalidateQueries({ queryKey: ["media", id] });
+                    qc.invalidateQueries({ queryKey: ["favorites"] });
+                  });
                 }}
                 onDelete={async () => {
                   if (!confirm("Delete this item?")) return;
@@ -269,16 +280,9 @@ function Lightbox({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-2xl"
       onClick={onClose}
     >
-      <div className="absolute right-5 top-5 z-10 flex gap-2">
+      <div className="absolute right-5 top-5 z-10 flex gap-2" onClick={(e) => e.stopPropagation()}>
         {url && (
-          <a
-            href={url}
-            download
-            onClick={(e) => e.stopPropagation()}
-            className="glass-strong flex h-10 w-10 items-center justify-center rounded-full"
-          >
-            <Download className="h-4 w-4" />
-          </a>
+          <DownloadMenu url={url} item={current} />
         )}
         <button
           onClick={onClose}
@@ -347,5 +351,90 @@ function Lightbox({
         )}
       </motion.div>
     </motion.div>
+  );
+}
+
+function DownloadMenu({ url, item }: { url: string; item: Media }) {
+  const [busy, setBusy] = useState(false);
+
+  const triggerDownload = (href: string, name: string) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const downloadOriginal = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const obj = URL.createObjectURL(blob);
+      triggerDownload(obj, (item.title || "media") + "-original");
+      setTimeout(() => URL.revokeObjectURL(obj), 5000);
+    } finally { setBusy(false); }
+  };
+
+  const downloadCompressed = async () => {
+    if (item.media_type !== "image") {
+      toast.info("Compression only works for photos — downloading original.");
+      return downloadOriginal();
+    }
+    setBusy(true);
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("load failed"));
+        img.src = url;
+      });
+      const MAX = 1280;
+      const ratio = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.round(img.naturalWidth * ratio);
+      const h = Math.round(img.naturalHeight * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("no canvas");
+      ctx.drawImage(img, 0, 0, w, h);
+      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.78));
+      if (!blob) throw new Error("encode failed");
+      const obj = URL.createObjectURL(blob);
+      triggerDownload(obj, (item.title || "media") + "-compressed.jpg");
+      setTimeout(() => URL.revokeObjectURL(obj), 5000);
+    } catch {
+      toast.error("Compression failed");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={busy}
+        className="glass-strong flex h-10 w-10 items-center justify-center rounded-full disabled:opacity-60"
+        aria-label="Download"
+      >
+        <Download className="h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="glass-strong border-white/10">
+        <DropdownMenuItem onClick={downloadOriginal}>
+          <div className="flex flex-col">
+            <span>Original (HD)</span>
+            <span className="text-xs text-muted-foreground">Full quality file</span>
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={downloadCompressed}>
+          <div className="flex flex-col">
+            <span>Compressed (smaller)</span>
+            <span className="text-xs text-muted-foreground">
+              {item.media_type === "image" ? "~1280px JPEG" : "Video — original only"}
+            </span>
+          </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
