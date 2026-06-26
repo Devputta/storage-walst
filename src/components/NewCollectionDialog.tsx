@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { sha256 } from "@/lib/auth";
+import { setCollectionPin, setRecoveryQuestion } from "@/lib/collections.functions";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
