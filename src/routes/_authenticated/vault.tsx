@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { Heart } from "lucide-react";
+import { Heart, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { useSignedUrl } from "@/lib/storage";
+import { useVaultUnlock } from "@/components/VaultUnlock";
+import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/vault")({
   head: () => ({ meta: [{ title: "Vault — Lumen" }] }),
@@ -14,8 +17,16 @@ export const Route = createFileRoute("/_authenticated/vault")({
 type Fav = { id: string; storage_path: string; media_type: "image" | "video"; title: string | null };
 
 function VaultPage() {
+  const { unlocked, request, lock } = useVaultUnlock();
+
+  // Auto-prompt for PIN on first visit
+  useEffect(() => {
+    if (!unlocked) request();
+  }, [unlocked, request]);
+
   const { data } = useQuery({
     queryKey: ["favorites"],
+    enabled: unlocked,
     queryFn: async (): Promise<Fav[]> => {
       const { data, error } = await supabase
         .from("media")
@@ -27,19 +38,43 @@ function VaultPage() {
     },
   });
 
+  if (!unlocked) {
+    return (
+      <AppShell>
+        <section className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+          <div className="glass-strong flex h-16 w-16 items-center justify-center rounded-full">
+            <Lock className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="mt-6 font-display text-4xl">The Vault is locked</h1>
+          <p className="mt-2 max-w-sm text-muted-foreground">
+            Your favorites live behind a private PIN.
+          </p>
+          <Button onClick={() => request()} className="mt-6 rounded-full">
+            Unlock Vault
+          </Button>
+        </section>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <section className="pt-8 pb-12">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-muted-foreground">
-            <Heart className="h-3.5 w-3.5 text-primary" /> The Vault
-          </p>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl">
-            Your <span className="text-gradient">favorites</span>.
-          </h1>
-          <p className="mt-3 max-w-lg text-muted-foreground">
-            Hidden moments — only you know this door exists.
-          </p>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-muted-foreground">
+              <Heart className="h-3.5 w-3.5 text-primary" /> The Vault
+            </p>
+            <h1 className="mt-3 font-display text-5xl md:text-6xl">
+              Your <span className="text-gradient">favorites</span>.
+            </h1>
+            <p className="mt-3 max-w-lg text-muted-foreground">
+              Hidden moments — only you know this door exists.
+            </p>
+          </div>
+          <Button variant="secondary" onClick={lock} className="rounded-full">
+            <Lock className="mr-1.5 h-4 w-4" /> Lock now
+          </Button>
         </motion.div>
       </section>
 
