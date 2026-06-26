@@ -164,3 +164,26 @@ export const setRecoveryQuestion = createServerFn({ method: "POST" })
     if (error) return { ok: false as const };
     return { ok: true as const };
   });
+
+export const setCollectionPin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        collectionId: z.string().uuid(),
+        newPin: z.string().min(1).max(64),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const newHash = await sha256Hex(data.newPin);
+    const { error } = await supabaseAdmin
+      .from("collections")
+      .update({ pin_hash: newHash, is_private: true })
+      .eq("id", data.collectionId)
+      .eq("user_id", userId);
+    if (error) return { ok: false as const };
+    return { ok: true as const };
+  });
