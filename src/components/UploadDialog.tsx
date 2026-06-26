@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, X } from "lucide-react";
+import { Upload, X, FolderOpen, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,10 +17,15 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
   const [description, setDescription] = useState("");
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const onPick = (list: FileList | null) => {
     if (!list) return;
-    setFiles(Array.from(list));
+    const arr = Array.from(list).filter(
+      (f) => f.type.startsWith("image") || f.type.startsWith("video"),
+    );
+    setFiles((prev) => [...prev, ...arr]);
   };
 
   const reset = () => {
@@ -79,54 +84,102 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
           <Upload className="mr-1.5 h-4 w-4" /> Upload
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass-strong border-white/10 sm:max-w-lg rounded-3xl">
+      <DialogContent className="glass-strong border-white/10 sm:max-w-lg rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">Add to collection</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
-          <label
-            className="block cursor-pointer rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-10 text-center transition hover:border-primary/40"
+          {/* hidden inputs */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*"
+            hidden
+            onChange={(e) => { onPick(e.target.files); e.target.value = ""; }}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            hidden
+            // @ts-expect-error non-standard attributes for folder selection
+            webkitdirectory=""
+            directory=""
+            onChange={(e) => { onPick(e.target.files); e.target.value = ""; }}
+          />
+
+          <div
+            className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); onPick(e.dataTransfer.files); }}
           >
-            <input
-              type="file"
-              multiple
-              accept="image/*,video/*"
-              hidden
-              onChange={(e) => onPick(e.target.files)}
-            />
             <Upload className="mx-auto h-7 w-7 text-primary" />
-            <p className="mt-3 text-sm">
-              <span className="font-medium">Drop files</span>{" "}
-              <span className="text-muted-foreground">or click to choose</span>
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">Photos and videos</p>
-          </label>
+            <p className="mt-3 text-sm text-muted-foreground">Drop files anywhere, or</p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-full"
+              >
+                <ImageIcon className="mr-1.5 h-4 w-4" /> Select files
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => folderInputRef.current?.click()}
+                className="rounded-full"
+              >
+                <FolderOpen className="mr-1.5 h-4 w-4" /> Select folder
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Photos and videos — no item limit</p>
+          </div>
 
           {files.length > 0 && (
             <div className="space-y-2">
-              <div className="grid grid-cols-4 gap-2">
-                {files.slice(0, 8).map((f, i) => {
-                  const url = URL.createObjectURL(f);
-                  return (
-                    <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10">
-                      {f.type.startsWith("video") ? (
-                        <video src={url} className="h-full w-full object-cover" muted />
-                      ) : (
-                        <img src={url} className="h-full w-full object-cover" alt="" />
-                      )}
-                      <button
-                        onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  );
-                })}
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {files.length} file{files.length > 1 ? "s" : ""} ready
+                </p>
+                <button
+                  onClick={() => setFiles([])}
+                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Clear all
+                </button>
               </div>
-              <p className="text-xs text-muted-foreground">{files.length} file{files.length > 1 ? "s" : ""} ready</p>
+              <div className="max-h-64 overflow-y-auto rounded-xl bg-black/20 p-2">
+                <div className="grid grid-cols-4 gap-2">
+                  {files.map((f, i) => {
+                    const url = URL.createObjectURL(f);
+                    return (
+                      <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10">
+                        {f.type.startsWith("video") ? (
+                          <video
+                            src={`${url}#t=0.1`}
+                            className="h-full w-full object-cover"
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        ) : (
+                          <img src={url} className="h-full w-full object-cover" alt="" />
+                        )}
+                        <button
+                          onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 

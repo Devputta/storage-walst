@@ -103,7 +103,7 @@ function CollectionPage() {
           {needsPin ? (collection?.nickname ?? "Locked") : (collection?.title ?? "Collection")}
         </motion.h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="glass flex items-center rounded-full p-1">
             {(["all", "image", "video"] as const).map((f) => (
               <button
@@ -196,7 +196,15 @@ function MediaTile({
           m.media_type === "image" ? (
             <img src={url} alt={m.title ?? ""} className="w-full" loading="lazy" />
           ) : (
-            <video src={`${url}#t=0.5`} className="w-full bg-black" muted playsInline preload="metadata" />
+            <video
+              src={url}
+              className="w-full bg-black"
+              muted
+              loop
+              autoPlay
+              playsInline
+              preload="auto"
+            />
           )
         ) : (
           <div className="aspect-[3/4] w-full animate-pulse bg-white/5" />
