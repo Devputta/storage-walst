@@ -103,7 +103,7 @@ function CollectionPage() {
           {needsPin ? (collection?.nickname ?? "Locked") : (collection?.title ?? "Collection")}
         </motion.h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="glass flex items-center rounded-full p-1">
             {(["all", "image", "video"] as const).map((f) => (
               <button
