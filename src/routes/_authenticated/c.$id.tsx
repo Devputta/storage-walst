@@ -12,6 +12,13 @@ import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog"
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { useSignedUrl } from "@/lib/storage";
+import { useVaultUnlock } from "@/components/VaultUnlock";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/c/$id")({
   component: CollectionPage,
