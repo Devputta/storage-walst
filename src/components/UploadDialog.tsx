@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export function UploadDialog({ collectionId }: { collectionId: string }) {
   const qc = useQueryClient();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
