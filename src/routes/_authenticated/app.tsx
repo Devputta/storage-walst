@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Search } from "lucide-react";
@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
 import { NewCollectionDialog } from "@/components/NewCollectionDialog";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({ meta: [{ title: "Your Space — Lumen" }] }),
@@ -25,8 +26,33 @@ type Row = {
 };
 
 function AppPage() {
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
+
+  const deleteCollection = async (cid: string, title: string) => {
+    if (!confirm(`Delete "${title}" and all its photos & videos? This cannot be undone.`)) return;
+    try {
+      const { data: items } = await supabase
+        .from("media")
+        .select("id,storage_path")
+        .eq("collection_id", cid);
+      const paths = (items ?? []).map((i) => i.storage_path).filter(Boolean);
+      if (paths.length) {
+        // Storage.remove handles batches; chunk to be safe
+        for (let i = 0; i < paths.length; i += 100) {
+          await supabase.storage.from("media").remove(paths.slice(i, i + 100));
+        }
+      }
+      await supabase.from("media").delete().eq("collection_id", cid);
+      await supabase.from("collections").delete().eq("id", cid);
+      toast.success("Collection deleted");
+      qc.invalidateQueries({ queryKey: ["collections"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["collections"],
@@ -97,7 +123,7 @@ function AppPage() {
               const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
               return (
                 <div key={c.id} onClick={() => locked && setUnlocked((u) => ({ ...u, [c.id]: false }))}>
-                  <CollectionCard c={card} locked={locked} />
+                  <CollectionCard c={card} locked={locked} onDelete={() => deleteCollection(c.id, c.title)} />
                 </div>
               );
             })}

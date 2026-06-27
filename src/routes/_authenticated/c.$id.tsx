@@ -228,8 +228,8 @@ function MediaTile({
           <div className="aspect-[3/4] w-full animate-pulse bg-white/5" />
         )}
       </button>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-      <div className="absolute right-2 top-2 flex translate-y-1 gap-1 opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 transition md:opacity-0 md:group-hover:opacity-100" />
+      <div className="absolute right-2 top-2 flex gap-1 opacity-100 transition md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">
         <button
           onClick={onFavorite}
           className="glass-strong flex h-8 w-8 items-center justify-center rounded-full"
