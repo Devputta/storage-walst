@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Lock, Eye } from "lucide-react";
+import { Lock, Eye, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useSignedUrl } from "@/lib/storage";
 
@@ -13,13 +13,22 @@ export type CollectionCardData = {
   count?: number;
 };
 
-export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: boolean }) {
+export function CollectionCard({
+  c,
+  locked,
+  onDelete,
+}: {
+  c: CollectionCardData;
+  locked: boolean;
+  onDelete?: () => void;
+}) {
   const { data: coverUrl } = useSignedUrl(c.cover_url);
   const displayTitle = locked && c.nickname ? c.nickname : c.title;
   return (
     <motion.div
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      className="relative"
     >
       <Link
         to="/c/$id"
@@ -68,6 +77,22 @@ export function CollectionCard({ c, locked }: { c: CollectionCardData; locked: b
           )}
         </div>
       </Link>
+
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          aria-label="Delete collection"
+          className="glass-strong absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full opacity-100 transition md:opacity-0 md:group-hover:opacity-100 hover:bg-destructive/40"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
     </motion.div>
   );
 }
+
