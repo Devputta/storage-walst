@@ -26,8 +26,33 @@ type Row = {
 };
 
 function AppPage() {
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
+
+  const deleteCollection = async (cid: string, title: string) => {
+    if (!confirm(`Delete "${title}" and all its photos & videos? This cannot be undone.`)) return;
+    try {
+      const { data: items } = await supabase
+        .from("media")
+        .select("id,storage_path")
+        .eq("collection_id", cid);
+      const paths = (items ?? []).map((i) => i.storage_path).filter(Boolean);
+      if (paths.length) {
+        // Storage.remove handles batches; chunk to be safe
+        for (let i = 0; i < paths.length; i += 100) {
+          await supabase.storage.from("media").remove(paths.slice(i, i + 100));
+        }
+      }
+      await supabase.from("media").delete().eq("collection_id", cid);
+      await supabase.from("collections").delete().eq("id", cid);
+      toast.success("Collection deleted");
+      qc.invalidateQueries({ queryKey: ["collections"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["collections"],
