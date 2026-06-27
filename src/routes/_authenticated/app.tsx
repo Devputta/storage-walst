@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Search } from "lucide-react";
@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
 import { NewCollectionDialog } from "@/components/NewCollectionDialog";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({ meta: [{ title: "Your Space — Lumen" }] }),
