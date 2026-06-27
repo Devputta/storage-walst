@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useServerFn } from "@tanstack/react-start";
+import { ensureMediaBucketLimit } from "@/lib/storage.functions";
+
+const CONCURRENCY = 4;
 
 export function UploadDialog({ collectionId }: { collectionId: string }) {
   const qc = useQueryClient();
@@ -17,10 +21,15 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [progress, setProgress] = useState(0);
+  const [done, setDone] = useState(0);
   const [busy, setBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const raiseLimit = useServerFn(ensureMediaBucketLimit);
+
+  useEffect(() => {
+    if (open) raiseLimit().catch(() => {});
+  }, [open, raiseLimit]);
 
   const onPick = (list: FileList | null) => {
     if (!list) return;
@@ -31,46 +40,69 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
   };
 
   const reset = () => {
-    setFiles([]); setTitle(""); setDescription(""); setProgress(0);
+    setFiles([]); setTitle(""); setDescription(""); setDone(0);
   };
 
   const upload = async () => {
     if (!files.length) return;
     setBusy(true);
+    setDone(0);
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
+      const userId = u.user.id;
       const total = files.length;
       let coverPath: string | null = null;
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        const ext = f.name.split(".").pop() ?? "bin";
-        const path = `${u.user.id}/${collectionId}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("media").upload(path, f, {
-          contentType: f.type,
-          upsert: false,
-        });
-        if (upErr) throw upErr;
-        const mediaType = f.type.startsWith("video") ? "video" : "image";
-        await supabase.from("media").insert({
-          user_id: u.user.id,
-          collection_id: collectionId,
-          title: title || f.name.replace(/\.[^.]+$/, ""),
-          description: description || null,
-          storage_path: path,
-          media_type: mediaType,
-          mime_type: f.type,
-          size_bytes: f.size,
-        });
-        if (!coverPath && mediaType === "image") {
-          coverPath = path;
+      let completed = 0;
+      let failed = 0;
+
+      const uploadOne = async (f: File) => {
+        try {
+          const ext = f.name.split(".").pop() ?? "bin";
+          const path = `${userId}/${collectionId}/${crypto.randomUUID()}.${ext}`;
+          const { error: upErr } = await supabase.storage.from("media").upload(path, f, {
+            contentType: f.type || "application/octet-stream",
+            upsert: false,
+          });
+          if (upErr) throw upErr;
+          const mediaType = f.type.startsWith("video") ? "video" : "image";
+          await supabase.from("media").insert({
+            user_id: userId,
+            collection_id: collectionId,
+            title: title || f.name.replace(/\.[^.]+$/, ""),
+            description: description || null,
+            storage_path: path,
+            media_type: mediaType,
+            mime_type: f.type,
+            size_bytes: f.size,
+          });
+          if (!coverPath && mediaType === "image") coverPath = path;
+        } catch (e) {
+          failed++;
+          console.error("upload failed", f.name, e);
+        } finally {
+          completed++;
+          setDone(completed);
         }
-        setProgress(Math.round(((i + 1) / total) * 100));
-      }
+      };
+
+      // Concurrency-limited parallel uploads
+      const queue = [...files];
+      const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+        while (queue.length) {
+          const next = queue.shift();
+          if (!next) break;
+          await uploadOne(next);
+        }
+      });
+      await Promise.all(workers);
+
       if (coverPath) {
         await supabase.from("collections").update({ cover_url: coverPath }).eq("id", collectionId).is("cover_url", null);
       }
-      toast.success(`Uploaded ${total} item${total > 1 ? "s" : ""}`);
+      const ok = total - failed;
+      if (ok) toast.success(`Uploaded ${ok} item${ok > 1 ? "s" : ""}`);
+      if (failed) toast.error(`${failed} file${failed > 1 ? "s" : ""} failed`);
       qc.invalidateQueries({ queryKey: ["media", collectionId] });
       qc.invalidateQueries({ queryKey: ["collections"] });
       reset(); setOpen(false);
@@ -79,19 +111,34 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
     } finally { setBusy(false); }
   };
 
+  const progressPct = files.length ? Math.round((done / files.length) * 100) : 0;
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        // Prevent closing the dialog while uploading — that's what caused
+        // taps outside / accidental dismisses to "restart" your upload.
+        if (busy && !o) return;
+        setOpen(o);
+        if (!o) reset();
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="rounded-full">
           <Upload className="mr-1.5 h-4 w-4" /> Upload
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass-strong border-white/10 sm:max-w-lg rounded-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="glass-strong border-white/10 sm:max-w-lg rounded-3xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => { if (busy) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (busy) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (busy) e.preventDefault(); }}
+      >
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">Add to collection</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
-          {/* hidden inputs */}
           <input
             ref={fileInputRef}
             type="file"
@@ -125,6 +172,7 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 className="rounded-full"
+                disabled={busy}
               >
                 <ImageIcon className="mr-1.5 h-4 w-4" /> Select files
               </Button>
@@ -135,15 +183,14 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
                   size="sm"
                   onClick={() => folderInputRef.current?.click()}
                   className="rounded-full"
+                  disabled={busy}
                 >
                   <FolderOpen className="mr-1.5 h-4 w-4" /> Select folder
                 </Button>
               )}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {isMobile
-                ? "Tip: in the picker, tap Select then choose as many photos/videos as you want. Folder picking isn't supported on mobile."
-                : "Photos and videos — no item limit"}
+              Photos & videos up to 1 GB each. Uploads run in parallel.
             </p>
           </div>
 
@@ -153,12 +200,14 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
                 <p className="text-xs text-muted-foreground">
                   {files.length} file{files.length > 1 ? "s" : ""} ready
                 </p>
-                <button
-                  onClick={() => setFiles([])}
-                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                >
-                  Clear all
-                </button>
+                {!busy && (
+                  <button
+                    onClick={() => setFiles([])}
+                    className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    Clear all
+                  </button>
+                )}
               </div>
               <div className="max-h-64 overflow-y-auto rounded-xl bg-black/20 p-2">
                 <div className="grid grid-cols-4 gap-2">
@@ -167,22 +216,18 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
                     return (
                       <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10">
                         {f.type.startsWith("video") ? (
-                          <video
-                            src={`${url}#t=0.1`}
-                            className="h-full w-full object-cover"
-                            muted
-                            playsInline
-                            preload="metadata"
-                          />
+                          <video src={`${url}#t=0.1`} className="h-full w-full object-cover" muted playsInline preload="metadata" />
                         ) : (
                           <img src={url} className="h-full w-full object-cover" alt="" />
                         )}
-                        <button
-                          onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                        {!busy && (
+                          <button
+                            onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -196,18 +241,27 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="h-11 rounded-xl bg-input/40"
+            disabled={busy}
           />
           <Textarea
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="min-h-[70px] rounded-xl bg-input/40"
+            disabled={busy}
           />
 
-          {busy && <Progress value={progress} />}
+          {busy && (
+            <div className="space-y-1.5">
+              <Progress value={progressPct} />
+              <p className="text-xs text-muted-foreground text-center">
+                {done} / {files.length} uploaded — keep this window open
+              </p>
+            </div>
+          )}
 
           <Button onClick={upload} disabled={busy || files.length === 0} className="h-11 w-full rounded-xl">
-            {busy ? `Uploading ${progress}%` : `Upload ${files.length || ""}`.trim()}
+            {busy ? `Uploading ${progressPct}%` : `Upload ${files.length || ""}`.trim()}
           </Button>
         </div>
       </DialogContent>
