@@ -9,6 +9,7 @@ import { AppShell } from "@/components/AppShell";
 import { UploadDialog } from "@/components/UploadDialog";
 import { PinDialog } from "@/components/PinDialog";
 import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog";
+import { DownloadCollectionButton } from "@/components/DownloadCollectionButton";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { useSignedUrl } from "@/lib/storage";
@@ -130,6 +131,12 @@ function CollectionPage() {
               collectionId={id}
               currentNickname={collection.nickname}
               hasPin={collection.has_pin}
+            />
+          )}
+          {!needsPin && media && media.length > 0 && (
+            <DownloadCollectionButton
+              items={media}
+              collectionTitle={collection?.title ?? "collection"}
             />
           )}
           {!needsPin && <UploadDialog collectionId={id} />}
