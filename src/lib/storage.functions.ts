@@ -10,6 +10,7 @@ export const ensureMediaBucketLimit = createServerFn({ method: "POST" })
     const { data } = await supabaseAdmin.storage.getBucket("media");
     if (data && data.file_size_limit === ONE_GB) return { ok: true as const, already: true };
     const { error } = await supabaseAdmin.storage.updateBucket("media", {
+      public: false,
       fileSizeLimit: ONE_GB,
     });
     if (error) return { ok: false as const, error: error.message };
