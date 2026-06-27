@@ -87,7 +87,7 @@ export function CollectionCard({
             onDelete();
           }}
           aria-label="Delete collection"
-          className="glass-strong absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full opacity-100 transition md:opacity-0 md:group-hover:opacity-100 hover:bg-destructive/40"
+          className="glass-strong absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full hover:bg-destructive/40"
         >
           <Trash2 className="h-4 w-4" />
         </button>
