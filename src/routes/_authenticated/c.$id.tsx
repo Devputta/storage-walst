@@ -1,8 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Heart, Trash2, ImageIcon, Video, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import {
+  ArrowLeft,
+  Heart,
+  Trash2,
+  ImageIcon,
+  Video,
+  X,
+  Download,
+  LayoutGrid,
+  ListChecks,
+  Pencil,
+  Check,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 
@@ -28,6 +40,7 @@ export const Route = createFileRoute("/_authenticated/c/$id")({
 type Media = {
   id: string;
   title: string | null;
+  description: string | null;
   storage_path: string;
   media_type: "image" | "video";
   mime_type: string | null;
@@ -42,14 +55,24 @@ type Collection = {
   has_pin: boolean;
 };
 
+type ViewMode = "grid" | "list";
+
 function CollectionPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | "image" | "video">("all");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "grid";
+    return (localStorage.getItem("lumen.viewMode") as ViewMode) || "grid";
+  });
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const vault = useVaultUnlock();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("lumen.viewMode", viewMode);
+  }, [viewMode]);
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
@@ -71,7 +94,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Media[]> => {
       const { data, error } = await supabase
         .from("media")
-        .select("id,title,storage_path,media_type,mime_type,is_favorite")
+        .select("id,title,description,storage_path,media_type,mime_type,is_favorite")
         .eq("collection_id", id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -85,6 +108,23 @@ function CollectionPage() {
     if (filter === "all") return list;
     return list.filter((m) => m.media_type === filter);
   }, [media, filter]);
+
+  const onFavorite = (m: Media) => {
+    vault.request(async () => {
+      await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
+      toast.success(m.is_favorite ? "Removed from Vault" : "Added to Vault");
+      qc.invalidateQueries({ queryKey: ["media", id] });
+      qc.invalidateQueries({ queryKey: ["favorites"] });
+    });
+  };
+
+  const onDelete = async (m: Media) => {
+    if (!confirm("Delete this item?")) return;
+    await supabase.storage.from("media").remove([m.storage_path]);
+    await supabase.from("media").delete().eq("id", m.id);
+    toast.success("Deleted");
+    qc.invalidateQueries({ queryKey: ["media", id] });
+  };
 
   return (
     <AppShell>
@@ -126,6 +166,26 @@ function CollectionPage() {
               </button>
             ))}
           </div>
+          <div className="glass flex items-center rounded-full p-1" role="tablist" aria-label="View mode">
+            <button
+              onClick={() => setViewMode("list")}
+              aria-label="List view"
+              className={`flex items-center justify-center rounded-full px-3 py-1.5 transition ${
+                viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ListChecks className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              aria-label="Grid view"
+              className={`flex items-center justify-center rounded-full px-3 py-1.5 transition ${
+                viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          </div>
           {!needsPin && collection && (
             <CollectionSettingsDialog
               collectionId={id}
@@ -148,28 +208,27 @@ function CollectionPage() {
           <div className="glass mt-12 rounded-3xl py-24 text-center text-muted-foreground">
             <p>Empty for now. Upload your first frame.</p>
           </div>
-        ) : (
+        ) : viewMode === "grid" ? (
           <div className="columns-2 gap-4 md:columns-3 lg:columns-4 [&>*]:mb-4">
             {filtered.map((m, i) => (
               <MediaTile
                 key={m.id}
                 m={m}
                 onOpen={() => setLightboxIndex(i)}
-                onFavorite={() => {
-                  vault.request(async () => {
-                    await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
-                    toast.success(m.is_favorite ? "Removed from Vault" : "Added to Vault");
-                    qc.invalidateQueries({ queryKey: ["media", id] });
-                    qc.invalidateQueries({ queryKey: ["favorites"] });
-                  });
-                }}
-                onDelete={async () => {
-                  if (!confirm("Delete this item?")) return;
-                  await supabase.storage.from("media").remove([m.storage_path]);
-                  await supabase.from("media").delete().eq("id", m.id);
-                  toast.success("Deleted");
-                  qc.invalidateQueries({ queryKey: ["media", id] });
-                }}
+                onFavorite={() => onFavorite(m)}
+                onDelete={() => onDelete(m)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {filtered.map((m, i) => (
+              <MediaRow
+                key={m.id}
+                m={m}
+                onOpen={() => setLightboxIndex(i)}
+                onFavorite={() => onFavorite(m)}
+                onDelete={() => onDelete(m)}
               />
             ))}
           </div>
@@ -178,11 +237,14 @@ function CollectionPage() {
 
       <AnimatePresence>
         {lightboxIndex !== null && filtered[lightboxIndex] && (
-          <Lightbox
+          <ReelLightbox
             items={filtered}
             index={lightboxIndex}
             onClose={() => setLightboxIndex(null)}
             onIndex={setLightboxIndex}
+            onFavorite={onFavorite}
+            onDelete={onDelete}
+            onMetaUpdated={() => qc.invalidateQueries({ queryKey: ["media", id] })}
           />
         )}
       </AnimatePresence>
@@ -245,119 +307,343 @@ function MediaTile({
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
-      <div className="absolute bottom-2 left-2">
-        <span className="glass inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] text-white/80">
-          {m.media_type === "image" ? <ImageIcon className="h-3 w-3" /> : <Video className="h-3 w-3" />}
-        </span>
-      </div>
+      {(m.title || m.description) && (
+        <div className="absolute inset-x-2 bottom-2 space-y-0.5 text-white drop-shadow">
+          {m.title && <p className="truncate text-sm font-medium">{m.title}</p>}
+          {m.description && <p className="line-clamp-2 text-[11px] text-white/80">{m.description}</p>}
+        </div>
+      )}
+      {!m.title && !m.description && (
+        <div className="absolute bottom-2 left-2">
+          <span className="glass inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] text-white/80">
+            {m.media_type === "image" ? <ImageIcon className="h-3 w-3" /> : <Video className="h-3 w-3" />}
+          </span>
+        </div>
+      )}
     </motion.div>
   );
 }
 
-function Lightbox({
+function MediaRow({
+  m,
+  onOpen,
+  onFavorite,
+  onDelete,
+}: {
+  m: Media;
+  onOpen: () => void;
+  onFavorite: () => void;
+  onDelete: () => void;
+}) {
+  const { data: url } = useSignedUrl(m.storage_path);
+  return (
+    <div className="glass flex items-center gap-3 rounded-2xl p-2 ring-1 ring-white/5">
+      <button
+        onClick={onOpen}
+        className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-black"
+      >
+        {url ? (
+          m.media_type === "image" ? (
+            <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+          ) : (
+            <video src={url} className="h-full w-full object-cover" muted loop autoPlay playsInline preload="metadata" />
+          )
+        ) : (
+          <div className="h-full w-full animate-pulse bg-white/5" />
+        )}
+      </button>
+      <button onClick={onOpen} className="min-w-0 flex-1 text-left">
+        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+          {m.media_type === "image" ? <ImageIcon className="h-3 w-3" /> : <Video className="h-3 w-3" />}
+          {m.media_type === "image" ? "Photo" : "Video"}
+        </div>
+        <p className="truncate text-sm font-medium text-foreground">{m.title || "Untitled"}</p>
+        {m.description && (
+          <p className="line-clamp-2 text-xs text-muted-foreground">{m.description}</p>
+        )}
+      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          onClick={onFavorite}
+          className="glass-strong flex h-9 w-9 items-center justify-center rounded-full"
+          aria-label="favorite"
+        >
+          <Heart className={`h-3.5 w-3.5 ${m.is_favorite ? "fill-primary text-primary" : ""}`} />
+        </button>
+        <button
+          onClick={onDelete}
+          className="glass-strong flex h-9 w-9 items-center justify-center rounded-full"
+          aria-label="delete"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReelLightbox({
   items,
   index,
   onClose,
   onIndex,
+  onFavorite,
+  onDelete,
+  onMetaUpdated,
 }: {
   items: Media[];
   index: number;
   onClose: () => void;
   onIndex: (i: number) => void;
+  onFavorite: (m: Media) => void;
+  onDelete: (m: Media) => void;
+  onMetaUpdated: () => void;
 }) {
-  const current = items[index];
-  const { data: url } = useSignedUrl(current?.storage_path);
-  const [speed, setSpeed] = useState(1);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Scroll to current index when opened or index changes externally
+  useEffect(() => {
+    const el = itemRefs.current[index];
+    if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Detect snapped index on scroll
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const top = el.scrollTop;
+        const h = el.clientHeight;
+        const i = Math.round(top / h);
+        if (i !== index && i >= 0 && i < items.length) onIndex(i);
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [index, items.length, onIndex]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") onIndex((index - 1 + items.length) % items.length);
-      if (e.key === "ArrowRight") onIndex((index + 1) % items.length);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, items.length, onClose, onIndex]);
+  }, [onClose]);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-2xl"
-      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black"
     >
-      <div className="absolute right-5 top-5 z-10 flex gap-2" onClick={(e) => e.stopPropagation()}>
-        {url && (
-          <DownloadMenu url={url} item={current} />
-        )}
-        <button
-          onClick={onClose}
-          className="glass-strong flex h-10 w-10 items-center justify-center rounded-full"
-        >
-          <X className="h-4 w-4" />
-        </button>
+      <button
+        onClick={onClose}
+        className="glass-strong absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full"
+        aria-label="Close"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <div
+        ref={scrollRef}
+        className="h-dvh w-full snap-y snap-mandatory overflow-y-scroll"
+        style={{ scrollSnapType: "y mandatory" }}
+      >
+        {items.map((m, i) => (
+          <div
+            key={m.id}
+            ref={(el) => { itemRefs.current[i] = el; }}
+            className="relative flex h-dvh w-full snap-start items-center justify-center"
+          >
+            <ReelSlide
+              m={m}
+              active={i === index}
+              onFavorite={() => onFavorite(m)}
+              onDelete={() => { onDelete(m); }}
+              onMetaUpdated={onMetaUpdated}
+            />
+          </div>
+        ))}
       </div>
 
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onIndex((index - 1 + items.length) % items.length);
-        }}
-        className="glass-strong absolute left-5 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onIndex((index + 1) % items.length);
-        }}
-        className="glass-strong absolute right-5 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 text-[11px] text-white/60">
+        {index + 1} / {items.length}
+      </div>
+    </motion.div>
+  );
+}
 
-      <motion.div
-        key={current.id}
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.35 }}
-        className="relative max-h-[88vh] max-w-[92vw]"
-        onClick={(e) => e.stopPropagation()}
-      >
+function ReelSlide({
+  m,
+  active,
+  onFavorite,
+  onDelete,
+  onMetaUpdated,
+}: {
+  m: Media;
+  active: boolean;
+  onFavorite: () => void;
+  onDelete: () => void;
+  onMetaUpdated: () => void;
+}) {
+  const { data: url } = useSignedUrl(m.storage_path);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [speed, setSpeed] = useState(1);
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(m.title ?? "");
+  const [desc, setDesc] = useState(m.description ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setTitle(m.title ?? "");
+    setDesc(m.description ?? "");
+  }, [m.id, m.title, m.description]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (active) {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
+  }, [active, url]);
+
+  const save = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("media")
+      .update({ title: title.trim() || null, description: desc.trim() || null })
+      .eq("id", m.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Couldn't save");
+      return;
+    }
+    toast.success("Saved");
+    setEditing(false);
+    onMetaUpdated();
+  };
+
+  return (
+    <>
+      <div className="absolute inset-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         {url ? (
-          current.media_type === "image" ? (
-            <img src={url} alt={current.title ?? ""} className="max-h-[88vh] max-w-[92vw] object-contain" />
+          m.media_type === "image" ? (
+            <img src={url} alt={m.title ?? ""} className="max-h-full max-w-full object-contain" />
           ) : (
             <video
+              ref={videoRef}
               src={url}
-              autoPlay
-              controls
               playsInline
-              className="max-h-[88vh] max-w-[92vw]"
-              ref={(el) => { if (el) el.playbackRate = speed; }}
+              controls
+              loop
+              className="max-h-full max-w-full"
+              onLoadedMetadata={(e) => { (e.currentTarget.playbackRate = speed); }}
             />
           )
         ) : (
-          <div className="h-[60vh] w-[60vw] animate-pulse rounded-2xl bg-white/5" />
+          <div className="h-3/4 w-3/4 animate-pulse rounded-2xl bg-white/5" />
         )}
-        {current.media_type === "video" && (
-          <div className="glass-strong mx-auto mt-4 flex w-full max-w-md items-center gap-3 rounded-full px-5 py-2">
-            <span className="text-xs text-muted-foreground">Speed</span>
-            <Slider
-              value={[speed]}
-              min={0.5}
-              max={2}
-              step={0.25}
-              onValueChange={(v) => setSpeed(v[0])}
-              className="flex-1"
+      </div>
+
+      {/* Right-side action rail (reel-style) */}
+      <div className="absolute right-3 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={onFavorite}
+          className="glass-strong flex h-11 w-11 items-center justify-center rounded-full"
+          aria-label="favorite"
+        >
+          <Heart className={`h-4 w-4 ${m.is_favorite ? "fill-primary text-primary" : ""}`} />
+        </button>
+        {url && <DownloadMenu url={url} item={m} />}
+        <button
+          onClick={() => setEditing((v) => !v)}
+          className="glass-strong flex h-11 w-11 items-center justify-center rounded-full"
+          aria-label="Edit details"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="glass-strong flex h-11 w-11 items-center justify-center rounded-full"
+          aria-label="delete"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Bottom title/description overlay */}
+      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 pb-10 pr-20" onClick={(e) => e.stopPropagation()}>
+        {editing ? (
+          <div className="glass-strong space-y-2 rounded-2xl p-3">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title"
+              className="w-full rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-1 ring-white/10 focus:ring-primary"
             />
-            <span className="w-10 text-right text-xs">{speed.toFixed(2)}x</span>
+            <textarea
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="Description"
+              rows={2}
+              className="w-full resize-none rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-1 ring-white/10 focus:ring-primary"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEditing(false)}
+                className="rounded-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={save}
+                disabled={saving}
+                className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-60"
+              >
+                <Check className="h-3 w-3" /> Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1 text-white">
+            <p className="text-lg font-semibold drop-shadow">{m.title || "Untitled"}</p>
+            {m.description && (
+              <p className="max-w-2xl text-sm text-white/85 drop-shadow">{m.description}</p>
+            )}
           </div>
         )}
-      </motion.div>
-    </motion.div>
+
+        {m.media_type === "video" && !editing && (
+          <div className="glass-strong mt-3 flex max-w-md items-center gap-3 rounded-full px-4 py-1.5">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Speed</span>
+            <Slider
+              value={[speed]}
+              min={0.25}
+              max={2}
+              step={0.25}
+              onValueChange={(v) => {
+                setSpeed(v[0]);
+                if (videoRef.current) videoRef.current.playbackRate = v[0];
+              }}
+              className="flex-1"
+            />
+            <span className="w-10 text-right text-[11px]">{speed.toFixed(2)}x</span>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -421,7 +707,7 @@ function DownloadMenu({ url, item }: { url: string; item: Media }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         disabled={busy}
-        className="glass-strong flex h-10 w-10 items-center justify-center rounded-full disabled:opacity-60"
+        className="glass-strong flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-60"
         aria-label="Download"
       >
         <Download className="h-4 w-4" />
