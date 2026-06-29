@@ -306,13 +306,11 @@ function MediaTile({
             <img src={url} alt={m.title ?? ""} className="w-full" loading="lazy" />
           ) : (
             <video
-              src={url}
+              src={`${url}#t=0.5`}
               className="w-full bg-black"
               muted
-              loop
-              autoPlay
               playsInline
-              preload="auto"
+              preload="metadata"
             />
           )
         ) : (
