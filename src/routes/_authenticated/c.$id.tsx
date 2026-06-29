@@ -621,7 +621,7 @@ function ReelSlide({
       </div>
 
       {/* Bottom title/description overlay */}
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 pb-10 pr-20" onClick={(e) => e.stopPropagation()}>
+      <div className="pointer-events-none absolute inset-x-0 bottom-16 z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 pb-6 pr-20 [&>*]:pointer-events-auto" onClick={(e) => e.stopPropagation()}>
         {editing ? (
           <div className="glass-strong space-y-2 rounded-2xl p-3">
             <input
