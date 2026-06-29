@@ -545,7 +545,12 @@ function ReelSlide({
     if (!v) return;
     if (active) {
       v.currentTime = 0;
-      v.play().catch(() => {});
+      v.muted = false;
+      v.play().catch(() => {
+        // Browser blocked autoplay with sound — retry muted, user can unmute via controls
+        v.muted = true;
+        v.play().catch(() => {});
+      });
     } else {
       v.pause();
     }
