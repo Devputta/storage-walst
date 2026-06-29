@@ -214,29 +214,53 @@ function CollectionPage() {
             <p>Empty for now. Upload your first frame.</p>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="columns-2 gap-4 md:columns-3 lg:columns-4 [&>*]:mb-4">
-            {filtered.map((m, i) => (
-              <MediaTile
-                key={m.id}
-                m={m}
-                onOpen={() => setLightboxIndex(i)}
-                onFavorite={() => onFavorite(m)}
-                onDelete={() => onDelete(m)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="columns-2 gap-4 md:columns-3 lg:columns-4 [&>*]:mb-4">
+              {filtered.slice(0, visibleCount).map((m, i) => (
+                <MediaTile
+                  key={m.id}
+                  m={m}
+                  onOpen={() => setLightboxIndex(i)}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => onDelete(m)}
+                />
+              ))}
+            </div>
+            {visibleCount < filtered.length && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                >
+                  Load more ({filtered.length - visibleCount} left)
+                </button>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="flex flex-col gap-3">
-            {filtered.map((m, i) => (
-              <MediaRow
-                key={m.id}
-                m={m}
-                onOpen={() => setLightboxIndex(i)}
-                onFavorite={() => onFavorite(m)}
-                onDelete={() => onDelete(m)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col gap-3">
+              {filtered.slice(0, visibleCount).map((m, i) => (
+                <MediaRow
+                  key={m.id}
+                  m={m}
+                  onOpen={() => setLightboxIndex(i)}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => onDelete(m)}
+                />
+              ))}
+            </div>
+            {visibleCount < filtered.length && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                >
+                  Load more ({filtered.length - visibleCount} left)
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 
