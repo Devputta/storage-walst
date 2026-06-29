@@ -529,7 +529,7 @@ function ReelSlide({
 }) {
   const { data: url } = useSignedUrl(m.storage_path);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [speed, setSpeed] = useState(1);
+  
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(m.title ?? "");
   const [desc, setDesc] = useState(m.description ?? "");
@@ -586,7 +586,7 @@ function ReelSlide({
               controls
               loop
               className="max-h-full max-w-full"
-              onLoadedMetadata={(e) => { (e.currentTarget.playbackRate = speed); }}
+              
             />
           )
         ) : (
@@ -662,23 +662,6 @@ function ReelSlide({
           </div>
         )}
 
-        {m.media_type === "video" && !editing && (
-          <div className="glass-strong mt-3 flex max-w-md items-center gap-3 rounded-full px-4 py-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Speed</span>
-            <Slider
-              value={[speed]}
-              min={0.25}
-              max={2}
-              step={0.25}
-              onValueChange={(v) => {
-                setSpeed(v[0]);
-                if (videoRef.current) videoRef.current.playbackRate = v[0];
-              }}
-              className="flex-1"
-            />
-            <span className="w-10 text-right text-[11px]">{speed.toFixed(2)}x</span>
-          </div>
-        )}
       </div>
     </>
   );
