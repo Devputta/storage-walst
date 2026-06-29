@@ -23,7 +23,7 @@ import { PinDialog } from "@/components/PinDialog";
 import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog";
 import { DownloadCollectionButton } from "@/components/DownloadCollectionButton";
 import { toast } from "sonner";
-import { Slider } from "@/components/ui/slider";
+
 import { useSignedUrl } from "@/lib/storage";
 import { useVaultUnlock } from "@/components/VaultUnlock";
 import {
