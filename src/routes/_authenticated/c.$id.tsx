@@ -373,7 +373,7 @@ function MediaRow({
           m.media_type === "image" ? (
             <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
           ) : (
-            <video src={url} className="h-full w-full object-cover" muted loop autoPlay playsInline preload="metadata" />
+            <video src={`${url}#t=0.5`} className="h-full w-full object-cover" muted playsInline preload="metadata" />
           )
         ) : (
           <div className="h-full w-full animate-pulse bg-white/5" />
