@@ -57,6 +57,8 @@ type Collection = {
 
 type ViewMode = "grid" | "list";
 
+const PAGE_SIZE = 60;
+
 function CollectionPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
@@ -68,11 +70,14 @@ function CollectionPage() {
   });
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [unlocked, setUnlocked] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const vault = useVaultUnlock();
 
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("lumen.viewMode", viewMode);
   }, [viewMode]);
+
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id]);
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
