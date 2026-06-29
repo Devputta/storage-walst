@@ -485,21 +485,26 @@ function ReelLightbox({
         className="h-dvh w-full snap-y snap-mandatory overflow-y-scroll"
         style={{ scrollSnapType: "y mandatory" }}
       >
-        {items.map((m, i) => (
-          <div
-            key={m.id}
-            ref={(el) => { itemRefs.current[i] = el; }}
-            className="relative flex h-dvh w-full snap-start items-center justify-center"
-          >
-            <ReelSlide
-              m={m}
-              active={i === index}
-              onFavorite={() => onFavorite(m)}
-              onDelete={() => { onDelete(m); }}
-              onMetaUpdated={onMetaUpdated}
-            />
-          </div>
-        ))}
+        {items.map((m, i) => {
+          const near = Math.abs(i - index) <= 2;
+          return (
+            <div
+              key={m.id}
+              ref={(el) => { itemRefs.current[i] = el; }}
+              className="relative flex h-dvh w-full snap-start items-center justify-center"
+            >
+              {near ? (
+                <ReelSlide
+                  m={m}
+                  active={i === index}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => { onDelete(m); }}
+                  onMetaUpdated={onMetaUpdated}
+                />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 text-[11px] text-white/60">
