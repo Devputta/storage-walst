@@ -57,6 +57,8 @@ type Collection = {
 
 type ViewMode = "grid" | "list";
 
+const PAGE_SIZE = 60;
+
 function CollectionPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
@@ -68,11 +70,14 @@ function CollectionPage() {
   });
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [unlocked, setUnlocked] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const vault = useVaultUnlock();
 
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("lumen.viewMode", viewMode);
   }, [viewMode]);
+
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id]);
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
@@ -209,29 +214,53 @@ function CollectionPage() {
             <p>Empty for now. Upload your first frame.</p>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="columns-2 gap-4 md:columns-3 lg:columns-4 [&>*]:mb-4">
-            {filtered.map((m, i) => (
-              <MediaTile
-                key={m.id}
-                m={m}
-                onOpen={() => setLightboxIndex(i)}
-                onFavorite={() => onFavorite(m)}
-                onDelete={() => onDelete(m)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="columns-2 gap-4 md:columns-3 lg:columns-4 [&>*]:mb-4">
+              {filtered.slice(0, visibleCount).map((m, i) => (
+                <MediaTile
+                  key={m.id}
+                  m={m}
+                  onOpen={() => setLightboxIndex(i)}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => onDelete(m)}
+                />
+              ))}
+            </div>
+            {visibleCount < filtered.length && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                >
+                  Load more ({filtered.length - visibleCount} left)
+                </button>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="flex flex-col gap-3">
-            {filtered.map((m, i) => (
-              <MediaRow
-                key={m.id}
-                m={m}
-                onOpen={() => setLightboxIndex(i)}
-                onFavorite={() => onFavorite(m)}
-                onDelete={() => onDelete(m)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col gap-3">
+              {filtered.slice(0, visibleCount).map((m, i) => (
+                <MediaRow
+                  key={m.id}
+                  m={m}
+                  onOpen={() => setLightboxIndex(i)}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => onDelete(m)}
+                />
+              ))}
+            </div>
+            {visibleCount < filtered.length && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                >
+                  Load more ({filtered.length - visibleCount} left)
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 
@@ -277,13 +306,11 @@ function MediaTile({
             <img src={url} alt={m.title ?? ""} className="w-full" loading="lazy" />
           ) : (
             <video
-              src={url}
+              src={`${url}#t=0.5`}
               className="w-full bg-black"
               muted
-              loop
-              autoPlay
               playsInline
-              preload="auto"
+              preload="metadata"
             />
           )
         ) : (
@@ -346,7 +373,7 @@ function MediaRow({
           m.media_type === "image" ? (
             <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
           ) : (
-            <video src={url} className="h-full w-full object-cover" muted loop autoPlay playsInline preload="metadata" />
+            <video src={`${url}#t=0.5`} className="h-full w-full object-cover" muted playsInline preload="metadata" />
           )
         ) : (
           <div className="h-full w-full animate-pulse bg-white/5" />
@@ -458,21 +485,26 @@ function ReelLightbox({
         className="h-dvh w-full snap-y snap-mandatory overflow-y-scroll"
         style={{ scrollSnapType: "y mandatory" }}
       >
-        {items.map((m, i) => (
-          <div
-            key={m.id}
-            ref={(el) => { itemRefs.current[i] = el; }}
-            className="relative flex h-dvh w-full snap-start items-center justify-center"
-          >
-            <ReelSlide
-              m={m}
-              active={i === index}
-              onFavorite={() => onFavorite(m)}
-              onDelete={() => { onDelete(m); }}
-              onMetaUpdated={onMetaUpdated}
-            />
-          </div>
-        ))}
+        {items.map((m, i) => {
+          const near = Math.abs(i - index) <= 2;
+          return (
+            <div
+              key={m.id}
+              ref={(el) => { itemRefs.current[i] = el; }}
+              className="relative flex h-dvh w-full snap-start items-center justify-center"
+            >
+              {near ? (
+                <ReelSlide
+                  m={m}
+                  active={i === index}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => { onDelete(m); }}
+                  onMetaUpdated={onMetaUpdated}
+                />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 text-[11px] text-white/60">
@@ -513,7 +545,12 @@ function ReelSlide({
     if (!v) return;
     if (active) {
       v.currentTime = 0;
-      v.play().catch(() => {});
+      v.muted = false;
+      v.play().catch(() => {
+        // Browser blocked autoplay with sound — retry muted, user can unmute via controls
+        v.muted = true;
+        v.play().catch(() => {});
+      });
     } else {
       v.pause();
     }
