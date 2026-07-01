@@ -36,7 +36,8 @@ function AppPage() {
       const { data: items } = await supabase
         .from("media")
         .select("id,storage_path")
-        .eq("collection_id", cid);
+        .eq("collection_id", cid)
+        .range(0, 1049);
       const paths = (items ?? []).map((i) => i.storage_path).filter(Boolean);
       if (paths.length) {
         // Storage.remove handles batches; chunk to be safe

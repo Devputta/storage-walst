@@ -101,7 +101,8 @@ function CollectionPage() {
         .from("media")
         .select("id,title,description,storage_path,media_type,mime_type,is_favorite")
         .eq("collection_id", id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 1049);
       if (error) throw error;
       return data as Media[];
     },
