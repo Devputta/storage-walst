@@ -534,7 +534,8 @@ function ReelSlide({
 }) {
   const { data: url } = useSignedUrl(m.storage_path);
   const videoRef = useRef<HTMLVideoElement>(null);
-  
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(m.title ?? "");
   const [desc, setDesc] = useState(m.description ?? "");
