@@ -14,6 +14,7 @@ import { ensureMediaBucketLimit } from "@/lib/storage.functions";
 
 const CONCURRENCY = 4;
 const MAX_COLLECTION_ITEMS = 1050;
+const PREVIEW_LIMIT = 80;
 
 export function UploadDialog({ collectionId }: { collectionId: string }) {
   const qc = useQueryClient();
@@ -249,7 +250,7 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
               </div>
               <div className="max-h-64 overflow-y-auto rounded-xl bg-black/20 p-2">
                 <div className="grid grid-cols-4 gap-2">
-                  {files.map((f, i) => {
+                  {files.slice(0, PREVIEW_LIMIT).map((f, i) => {
                     const url = URL.createObjectURL(f);
                     return (
                       <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10">
@@ -269,6 +270,11 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
                       </div>
                     );
                   })}
+                  {files.length > PREVIEW_LIMIT && (
+                    <div className="flex aspect-square items-center justify-center rounded-lg bg-white/5 p-2 text-center text-xs text-muted-foreground ring-1 ring-white/10">
+                      +{files.length - PREVIEW_LIMIT} more
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

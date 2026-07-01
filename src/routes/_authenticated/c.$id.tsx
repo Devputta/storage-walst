@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
@@ -429,7 +429,7 @@ function ReelLightbox({
   const lockRef = useRef(false);
   const touchStartRef = useRef<number | null>(null);
 
-  const goTo = (nextIndex: number) => {
+  const goTo = useCallback((nextIndex: number) => {
     if (lockRef.current) return;
     const next = Math.max(0, Math.min(items.length - 1, nextIndex));
     if (next === index) return;
@@ -438,7 +438,7 @@ function ReelLightbox({
     window.setTimeout(() => {
       lockRef.current = false;
     }, 360);
-  };
+  }, [index, items.length, onIndex]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -448,7 +448,7 @@ function ReelLightbox({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, onClose]);
+  }, [goTo, index, onClose]);
 
   return (
     <motion.div
@@ -467,12 +467,14 @@ function ReelLightbox({
 
       <div
         className="h-[100dvh] w-full overflow-hidden overscroll-contain"
+        style={{ touchAction: "pan-y" }}
         onWheel={(e) => {
           if (Math.abs(e.deltaY) < 24) return;
           goTo(index + (e.deltaY > 0 ? 1 : -1));
         }}
         onTouchStart={(e) => {
-          touchStartRef.current = e.touches[0]?.clientY ?? null;
+          const y = e.touches[0]?.clientY ?? null;
+          touchStartRef.current = y !== null && y < window.innerHeight - 120 ? y : null;
         }}
         onTouchEnd={(e) => {
           if (touchStartRef.current === null) return;
