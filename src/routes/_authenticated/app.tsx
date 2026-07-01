@@ -67,6 +67,24 @@ function AppPage() {
     },
   });
 
+  const { data: counts } = useQuery({
+    queryKey: ["collection-counts", (data ?? []).map((c) => c.id).join(",")],
+    enabled: !!data && data.length > 0,
+    queryFn: async (): Promise<Record<string, number>> => {
+      const ids = (data ?? []).map((c) => c.id);
+      const entries = await Promise.all(
+        ids.map(async (id) => {
+          const { count } = await supabase
+            .from("media")
+            .select("id", { count: "exact", head: true })
+            .eq("collection_id", id);
+          return [id, count ?? 0] as const;
+        }),
+      );
+      return Object.fromEntries(entries);
+    },
+  });
+
   const filtered = useMemo(() => {
     const list = data ?? [];
     return list.filter((c) => {
