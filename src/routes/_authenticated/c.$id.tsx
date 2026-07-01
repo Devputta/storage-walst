@@ -591,8 +591,10 @@ function ReelSlide({
               playsInline
               controls
               loop
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
               className="h-full w-full object-contain"
-              
             />
           )
         ) : (
