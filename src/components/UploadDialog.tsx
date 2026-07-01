@@ -7,12 +7,14 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, X, FolderOpen, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useServerFn } from "@tanstack/react-start";
 import { ensureMediaBucketLimit } from "@/lib/storage.functions";
 
 const CONCURRENCY = 4;
+const MAX_COLLECTION_ITEMS = 1050;
+const PREVIEW_LIMIT = 80;
 
 export function UploadDialog({ collectionId }: { collectionId: string }) {
   const qc = useQueryClient();
@@ -27,6 +29,19 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const raiseLimit = useServerFn(ensureMediaBucketLimit);
 
+  const { data: existingCount = 0 } = useQuery({
+    queryKey: ["media-count", collectionId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("media")
+        .select("id", { count: "exact", head: true })
+        .eq("collection_id", collectionId);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: open,
+  });
+
   useEffect(() => {
     if (open) raiseLimit().catch(() => {});
   }, [open, raiseLimit]);
@@ -36,7 +51,17 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
     const arr = Array.from(list).filter(
       (f) => f.type.startsWith("image") || f.type.startsWith("video"),
     );
-    setFiles((prev) => [...prev, ...arr]);
+    setFiles((prev) => {
+      const slotsLeft = Math.max(0, MAX_COLLECTION_ITEMS - existingCount - prev.length);
+      if (slotsLeft === 0) {
+        toast.error("This collection already has the 1,050 item limit.");
+        return prev;
+      }
+      if (arr.length > slotsLeft) {
+        toast.info(`Added ${slotsLeft} file${slotsLeft === 1 ? "" : "s"}; each collection holds 1,050 items.`);
+      }
+      return [...prev, ...arr.slice(0, slotsLeft)];
+    });
   };
 
   const reset = () => {
@@ -50,6 +75,19 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
+      const { count, error: countError } = await supabase
+        .from("media")
+        .select("id", { count: "exact", head: true })
+        .eq("collection_id", collectionId);
+      if (countError) throw countError;
+      const remaining = MAX_COLLECTION_ITEMS - (count ?? 0);
+      if (files.length > remaining) {
+        throw new Error(
+          remaining > 0
+            ? `This collection can take ${remaining} more item${remaining === 1 ? "" : "s"}.`
+            : "This collection is full at 1,050 items.",
+        );
+      }
       const userId = u.user.id;
       const total = files.length;
       let coverPath: string | null = null;
@@ -104,6 +142,7 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
       if (ok) toast.success(`Uploaded ${ok} item${ok > 1 ? "s" : ""}`);
       if (failed) toast.error(`${failed} file${failed > 1 ? "s" : ""} failed`);
       qc.invalidateQueries({ queryKey: ["media", collectionId] });
+      qc.invalidateQueries({ queryKey: ["media-count", collectionId] });
       qc.invalidateQueries({ queryKey: ["collections"] });
       reset(); setOpen(false);
     } catch (e) {
@@ -190,7 +229,7 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
               )}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Photos & videos up to 1 GB each. Uploads run in parallel.
+              Photos & videos up to 1 GB each. Up to 1,050 items per collection.
             </p>
           </div>
 
@@ -198,7 +237,7 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
-                  {files.length} file{files.length > 1 ? "s" : ""} ready
+                  {files.length} file{files.length > 1 ? "s" : ""} ready · {Math.max(0, MAX_COLLECTION_ITEMS - existingCount - files.length)} slots left
                 </p>
                 {!busy && (
                   <button
@@ -211,7 +250,7 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
               </div>
               <div className="max-h-64 overflow-y-auto rounded-xl bg-black/20 p-2">
                 <div className="grid grid-cols-4 gap-2">
-                  {files.map((f, i) => {
+                  {files.slice(0, PREVIEW_LIMIT).map((f, i) => {
                     const url = URL.createObjectURL(f);
                     return (
                       <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10">
@@ -231,6 +270,11 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
                       </div>
                     );
                   })}
+                  {files.length > PREVIEW_LIMIT && (
+                    <div className="flex aspect-square items-center justify-center rounded-lg bg-white/5 p-2 text-center text-xs text-muted-foreground ring-1 ring-white/10">
+                      +{files.length - PREVIEW_LIMIT} more
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

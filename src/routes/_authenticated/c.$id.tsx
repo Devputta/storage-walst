@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
@@ -101,7 +101,8 @@ function CollectionPage() {
         .from("media")
         .select("id,title,description,storage_path,media_type,mime_type,is_favorite")
         .eq("collection_id", id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 1049);
       if (error) throw error;
       return data as Media[];
     },
@@ -426,44 +427,29 @@ function ReelLightbox({
   onDelete: (m: Media) => void;
   onMetaUpdated: () => void;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const lockRef = useRef(false);
+  const touchStartRef = useRef<number | null>(null);
 
-  // Scroll to current index when opened or index changes externally
-  useEffect(() => {
-    const el = itemRefs.current[index];
-    if (el) el.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Detect snapped index on scroll
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const top = el.scrollTop;
-        const h = el.clientHeight;
-        const i = Math.round(top / h);
-        if (i !== index && i >= 0 && i < items.length) onIndex(i);
-      });
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
+  const goTo = useCallback((nextIndex: number) => {
+    if (lockRef.current) return;
+    const next = Math.max(0, Math.min(items.length - 1, nextIndex));
+    if (next === index) return;
+    lockRef.current = true;
+    onIndex(next);
+    window.setTimeout(() => {
+      lockRef.current = false;
+    }, 360);
   }, [index, items.length, onIndex]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (e.key === "ArrowDown") goTo(index + 1);
+      if (e.key === "ArrowUp") goTo(index - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [goTo, index, onClose]);
 
   return (
     <motion.div
@@ -481,30 +467,49 @@ function ReelLightbox({
       </button>
 
       <div
-        ref={scrollRef}
-        className="h-dvh w-full snap-y snap-mandatory overflow-y-scroll"
-        style={{ scrollSnapType: "y mandatory" }}
+        className="h-[100dvh] w-full overflow-hidden overscroll-contain"
+        style={{ touchAction: "pan-y" }}
+        onWheel={(e) => {
+          if (Math.abs(e.deltaY) < 24) return;
+          goTo(index + (e.deltaY > 0 ? 1 : -1));
+        }}
+        onTouchStart={(e) => {
+          const y = e.touches[0]?.clientY ?? null;
+          touchStartRef.current = y !== null && y < window.innerHeight - 120 ? y : null;
+        }}
+        onTouchEnd={(e) => {
+          if (touchStartRef.current === null) return;
+          const end = e.changedTouches[0]?.clientY ?? touchStartRef.current;
+          const delta = touchStartRef.current - end;
+          touchStartRef.current = null;
+          if (Math.abs(delta) < 44) return;
+          goTo(index + (delta > 0 ? 1 : -1));
+        }}
       >
-        {items.map((m, i) => {
-          const near = Math.abs(i - index) <= 2;
-          return (
-            <div
-              key={m.id}
-              ref={(el) => { itemRefs.current[i] = el; }}
-              className="relative flex h-dvh w-full snap-start items-center justify-center"
-            >
-              {near ? (
-                <ReelSlide
-                  m={m}
-                  active={i === index}
-                  onFavorite={() => onFavorite(m)}
-                  onDelete={() => { onDelete(m); }}
-                  onMetaUpdated={onMetaUpdated}
-                />
-              ) : null}
-            </div>
-          );
-        })}
+        <div
+          className="h-full w-full transition-transform duration-300 ease-out"
+          style={{ transform: `translate3d(0, -${index * 100}dvh, 0)` }}
+        >
+          {items.map((m, i) => {
+            const near = Math.abs(i - index) <= 2;
+            return (
+              <div
+                key={m.id}
+                className="relative flex h-[100dvh] w-full shrink-0 items-center justify-center overflow-hidden"
+              >
+                {near ? (
+                  <ReelSlide
+                    m={m}
+                    active={i === index}
+                    onFavorite={() => onFavorite(m)}
+                    onDelete={() => { onDelete(m); }}
+                    onMetaUpdated={onMetaUpdated}
+                  />
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 text-[11px] text-white/60">
@@ -574,10 +579,10 @@ function ReelSlide({
 
   return (
     <>
-      <div className="absolute inset-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute inset-0 flex h-full w-full items-center justify-center" onClick={(e) => e.stopPropagation()}>
         {url ? (
           m.media_type === "image" ? (
-            <img src={url} alt={m.title ?? ""} className="max-h-full max-w-full object-contain" />
+            <img src={url} alt={m.title ?? ""} className="h-full w-full object-contain" />
           ) : (
             <video
               ref={videoRef}
@@ -585,7 +590,7 @@ function ReelSlide({
               playsInline
               controls
               loop
-              className="max-h-full max-w-full"
+              className="h-full w-full object-contain"
               
             />
           )

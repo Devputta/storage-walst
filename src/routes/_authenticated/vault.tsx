@@ -32,7 +32,8 @@ function VaultPage() {
         .from("media")
         .select("id,storage_path,media_type,title")
         .eq("is_favorite", true)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 1049);
       if (error) throw error;
       return data as Fav[];
     },
