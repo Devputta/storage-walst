@@ -138,7 +138,7 @@ function AppPage() {
           >
             <NewCollectionDialog />
             {filtered.map((c) => {
-              const card: CollectionCardData = c;
+              const card: CollectionCardData = { ...c, count: counts?.[c.id] };
               const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
               return (
                 <div key={c.id} onClick={() => locked && setUnlocked((u) => ({ ...u, [c.id]: false }))}>
