@@ -311,7 +311,8 @@ function MediaTile({
               className="w-full bg-black"
               muted
               playsInline
-              preload="metadata"
+              preload="none"
+              poster=""
             />
           )
         ) : (
@@ -374,7 +375,7 @@ function MediaRow({
           m.media_type === "image" ? (
             <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
           ) : (
-            <video src={`${url}#t=0.5`} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+            <video src={`${url}#t=0.5`} className="h-full w-full object-cover" muted playsInline preload="none" />
           )
         ) : (
           <div className="h-full w-full animate-pulse bg-white/5" />
@@ -486,30 +487,28 @@ function ReelLightbox({
           goTo(index + (delta > 0 ? 1 : -1));
         }}
       >
-        <div
-          className="h-full w-full transition-transform duration-300 ease-out"
-          style={{ transform: `translate3d(0, -${index * 100}dvh, 0)` }}
-        >
+        <div className="relative h-full w-full">
           {items.map((m, i) => {
-            const near = Math.abs(i - index) <= 2;
+            const offset = i - index;
+            if (Math.abs(offset) > 1) return null;
             return (
               <div
                 key={m.id}
-                className="relative flex h-[100dvh] w-full shrink-0 items-center justify-center overflow-hidden"
+                className="absolute inset-0 flex items-center justify-center overflow-hidden transition-transform duration-300 ease-out"
+                style={{ transform: `translate3d(0, ${offset * 100}dvh, 0)` }}
               >
-                {near ? (
-                  <ReelSlide
-                    m={m}
-                    active={i === index}
-                    onFavorite={() => onFavorite(m)}
-                    onDelete={() => { onDelete(m); }}
-                    onMetaUpdated={onMetaUpdated}
-                  />
-                ) : null}
+                <ReelSlide
+                  m={m}
+                  active={i === index}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => { onDelete(m); }}
+                  onMetaUpdated={onMetaUpdated}
+                />
               </div>
             );
           })}
         </div>
+
       </div>
 
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 text-[11px] text-white/60">
