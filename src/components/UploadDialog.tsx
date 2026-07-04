@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, X, FolderOpen, Image as ImageIcon } from "lucide-react";
+import { Upload, X, FolderOpen, Image as ImageIcon, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,75 @@ import { ensureMediaBucketLimit } from "@/lib/storage.functions";
 const CONCURRENCY = 4;
 const MAX_COLLECTION_ITEMS = 1050;
 const PREVIEW_LIMIT = 80;
+
+function VideoThumb({ file }: { file: File }) {
+  const [poster, setPoster] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.muted = true;
+    v.playsInline = true;
+    v.src = url;
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+      v.src = "";
+    };
+    const onLoaded = () => {
+      try {
+        v.currentTime = Math.min(0.5, (v.duration || 1) / 2);
+      } catch {
+        cleanup();
+      }
+    };
+    const onSeeked = () => {
+      try {
+        const w = 240;
+        const h = Math.round((v.videoHeight / v.videoWidth) * w) || 240;
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const ctx = c.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(v, 0, 0, w, h);
+          const data = c.toDataURL("image/jpeg", 0.7);
+          if (!cancelled) setPoster(data);
+        }
+      } catch {
+        // ignore
+      } finally {
+        cleanup();
+      }
+    };
+    v.addEventListener("loadedmetadata", onLoaded);
+    v.addEventListener("seeked", onSeeked);
+    v.addEventListener("error", cleanup);
+    return () => {
+      cancelled = true;
+      v.removeEventListener("loadedmetadata", onLoaded);
+      v.removeEventListener("seeked", onSeeked);
+      v.removeEventListener("error", cleanup);
+      cleanup();
+    };
+  }, [file]);
+  return (
+    <div className="relative h-full w-full bg-black">
+      {poster ? (
+        <img src={poster} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-white/50">
+          <Play className="h-6 w-6" />
+        </div>
+      )}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="rounded-full bg-black/50 p-1.5">
+          <Play className="h-3 w-3 fill-white text-white" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function UploadDialog({ collectionId }: { collectionId: string }) {
   const qc = useQueryClient();
