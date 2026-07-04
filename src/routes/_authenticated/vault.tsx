@@ -104,7 +104,7 @@ function VaultTile({ m }: { m: Fav }) {
         m.media_type === "image" ? (
           <img src={url} className="w-full" alt={m.title ?? ""} loading="lazy" />
         ) : (
-          <video src={url} className="w-full" muted playsInline preload="metadata" />
+          <video src={url} className="w-full" muted playsInline preload="none" />
         )
       ) : (
         <div className="aspect-[3/4] animate-pulse bg-white/5" />
