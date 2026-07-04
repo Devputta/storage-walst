@@ -311,7 +311,8 @@ function MediaTile({
               className="w-full bg-black"
               muted
               playsInline
-              preload="metadata"
+              preload="none"
+              poster=""
             />
           )
         ) : (
