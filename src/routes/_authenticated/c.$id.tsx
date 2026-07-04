@@ -487,30 +487,28 @@ function ReelLightbox({
           goTo(index + (delta > 0 ? 1 : -1));
         }}
       >
-        <div
-          className="h-full w-full transition-transform duration-300 ease-out"
-          style={{ transform: `translate3d(0, -${index * 100}dvh, 0)` }}
-        >
+        <div className="relative h-full w-full">
           {items.map((m, i) => {
-            const near = Math.abs(i - index) <= 2;
+            const offset = i - index;
+            if (Math.abs(offset) > 1) return null;
             return (
               <div
                 key={m.id}
-                className="relative flex h-[100dvh] w-full shrink-0 items-center justify-center overflow-hidden"
+                className="absolute inset-0 flex items-center justify-center overflow-hidden transition-transform duration-300 ease-out"
+                style={{ transform: `translate3d(0, ${offset * 100}dvh, 0)` }}
               >
-                {near ? (
-                  <ReelSlide
-                    m={m}
-                    active={i === index}
-                    onFavorite={() => onFavorite(m)}
-                    onDelete={() => { onDelete(m); }}
-                    onMetaUpdated={onMetaUpdated}
-                  />
-                ) : null}
+                <ReelSlide
+                  m={m}
+                  active={i === index}
+                  onFavorite={() => onFavorite(m)}
+                  onDelete={() => { onDelete(m); }}
+                  onMetaUpdated={onMetaUpdated}
+                />
               </div>
             );
           })}
         </div>
+
       </div>
 
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 text-[11px] text-white/60">
