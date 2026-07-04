@@ -320,13 +320,13 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
               <div className="max-h-64 overflow-y-auto rounded-xl bg-black/20 p-2">
                 <div className="grid grid-cols-4 gap-2">
                   {files.slice(0, PREVIEW_LIMIT).map((f, i) => {
-                    const url = URL.createObjectURL(f);
+                    const isVideo = f.type.startsWith("video");
                     return (
-                      <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10">
-                        {f.type.startsWith("video") ? (
-                          <video src={`${url}#t=0.1`} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                      <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 bg-black">
+                        {isVideo ? (
+                          <VideoThumb file={f} />
                         ) : (
-                          <img src={url} className="h-full w-full object-cover" alt="" />
+                          <img src={URL.createObjectURL(f)} className="h-full w-full object-cover" alt="" />
                         )}
                         {!busy && (
                           <button
