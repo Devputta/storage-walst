@@ -25,7 +25,7 @@ import { DownloadCollectionButton } from "@/components/DownloadCollectionButton"
 import { toast } from "sonner";
 
 import { useSignedUrl } from "@/lib/storage";
-import { useVaultUnlock } from "@/components/VaultUnlock";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +63,7 @@ function CollectionPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<"all" | "image" | "video">("all");
+  const [filter, setFilter] = useState<"all" | "image" | "video" | "favorite">("all");
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "grid";
     return (localStorage.getItem("lumen.viewMode") as ViewMode) || "grid";
@@ -71,7 +71,6 @@ function CollectionPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const vault = useVaultUnlock();
 
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("lumen.viewMode", viewMode);
@@ -112,16 +111,16 @@ function CollectionPage() {
   const filtered = useMemo(() => {
     const list = media ?? [];
     if (filter === "all") return list;
+    if (filter === "favorite") return list.filter((m) => m.is_favorite);
     return list.filter((m) => m.media_type === filter);
   }, [media, filter]);
 
-  const onFavorite = (m: Media) => {
-    vault.request(async () => {
-      await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
-      toast.success(m.is_favorite ? "Removed from Vault" : "Added to Vault");
-      qc.invalidateQueries({ queryKey: ["media", id] });
-      qc.invalidateQueries({ queryKey: ["favorites"] });
-    });
+  const favCount = useMemo(() => (media ?? []).filter((m) => m.is_favorite).length, [media]);
+
+  const onFavorite = async (m: Media) => {
+    await supabase.from("media").update({ is_favorite: !m.is_favorite }).eq("id", m.id);
+    toast.success(m.is_favorite ? "Removed from favorites" : "Added to favorites");
+    qc.invalidateQueries({ queryKey: ["media", id] });
   };
 
   const onDelete = async (m: Media) => {
@@ -160,15 +159,17 @@ function CollectionPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="glass flex items-center rounded-full p-1">
-            {(["all", "image", "video"] as const).map((f) => (
+            {(["all", "image", "video", "favorite"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`rounded-full px-3 py-1.5 text-xs uppercase tracking-wider transition ${
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs uppercase tracking-wider transition ${
                   filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {f === "all" ? "All" : f === "image" ? "Photos" : "Videos"}
+                {f === "all" ? "All" : f === "image" ? "Photos" : f === "video" ? "Videos" : (
+                  <><Heart className="h-3 w-3" /> {favCount || ""}</>
+                )}
               </button>
             ))}
           </div>
