@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Search } from "lucide-react";
+import { Search, Eye, EyeOff, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
@@ -28,6 +28,7 @@ type Row = {
 function AppPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [showHidden, setShowHidden] = useState(false);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
 
   const deleteCollection = async (cid: string, title: string) => {
@@ -88,11 +89,16 @@ function AppPage() {
   const filtered = useMemo(() => {
     const list = data ?? [];
     return list.filter((c) => {
-      if (c.is_invisible && !search) return false;
+      if (c.is_invisible && !showHidden && !search) return false;
       if (search && !c.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [data, search]);
+  }, [data, search, showHidden]);
+
+  const hiddenCount = useMemo(
+    () => (data ?? []).filter((c) => c.is_invisible).length,
+    [data],
+  );
 
   return (
     <AppShell>
