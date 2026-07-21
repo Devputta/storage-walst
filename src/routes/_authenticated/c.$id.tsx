@@ -307,14 +307,20 @@ function MediaTile({
           m.media_type === "image" ? (
             <img src={url} alt={m.title ?? ""} className="w-full" loading="lazy" />
           ) : (
-            <video
-              src={`${url}#t=0.5`}
-              className="w-full bg-black"
-              muted
-              playsInline
-              preload="none"
-              poster=""
-            />
+            <div className="relative w-full bg-black">
+              <video
+                src={`${url}#t=0.5`}
+                className="w-full"
+                muted
+                playsInline
+                preload="metadata"
+              />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 backdrop-blur">
+                  <Video className="h-5 w-5 fill-white text-white" />
+                </div>
+              </div>
+            </div>
           )
         ) : (
           <div className="aspect-[3/4] w-full animate-pulse bg-white/5" />
@@ -376,7 +382,14 @@ function MediaRow({
           m.media_type === "image" ? (
             <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
           ) : (
-            <video src={`${url}#t=0.5`} className="h-full w-full object-cover" muted playsInline preload="none" />
+            <div className="relative h-full w-full">
+              <video src={`${url}#t=0.5`} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/55">
+                  <Video className="h-4 w-4 text-white" />
+                </div>
+              </div>
+            </div>
           )
         ) : (
           <div className="h-full w-full animate-pulse bg-white/5" />
