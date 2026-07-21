@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Search } from "lucide-react";
+import { Search, Eye, EyeOff, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
@@ -28,6 +28,7 @@ type Row = {
 function AppPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [showHidden, setShowHidden] = useState(false);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
 
   const deleteCollection = async (cid: string, title: string) => {
@@ -88,11 +89,16 @@ function AppPage() {
   const filtered = useMemo(() => {
     const list = data ?? [];
     return list.filter((c) => {
-      if (c.is_invisible && !search) return false;
+      if (c.is_invisible && !showHidden && !search) return false;
       if (search && !c.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [data, search]);
+  }, [data, search, showHidden]);
+
+  const hiddenCount = useMemo(
+    () => (data ?? []).filter((c) => c.is_invisible).length,
+    [data],
+  );
 
   return (
     <AppShell>
@@ -111,8 +117,8 @@ function AppPage() {
           </p>
         </motion.div>
 
-        <div className="mt-8 max-w-md">
-          <div className="glass flex items-center gap-2 rounded-full px-4 py-2.5">
+        <div className="mt-8 flex flex-wrap items-center gap-2">
+          <div className="glass flex min-w-[220px] flex-1 items-center gap-2 rounded-full px-4 py-2.5 sm:max-w-md">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search collections…"
@@ -121,7 +127,27 @@ function AppPage() {
               className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
             />
           </div>
+          <div
+            className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs text-muted-foreground"
+            title="Each collection has its own favorites — tap the heart on any photo or video."
+          >
+            <Heart className="h-3.5 w-3.5 text-primary" />
+            <span className="hidden sm:inline">Favorites live inside each collection</span>
+            <span className="sm:hidden">Favorites in-collection</span>
+          </div>
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowHidden((v) => !v)}
+              className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs transition hover:text-foreground"
+              aria-pressed={showHidden}
+            >
+              {showHidden ? <EyeOff className="h-3.5 w-3.5 text-accent" /> : <Eye className="h-3.5 w-3.5 text-accent" />}
+              {showHidden ? `Hiding ${hiddenCount}` : `Show hidden (${hiddenCount})`}
+            </button>
+          )}
         </div>
+
       </section>
 
       <section>

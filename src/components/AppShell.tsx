@@ -1,5 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, Heart } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link to="/app"><Logo /></Link>
           </div>
           <div className="glass flex items-center gap-1 rounded-full px-2 py-1">
-            <Link
-              to="/vault"
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:text-foreground hover:bg-white/5 inline-flex items-center gap-1.5"
-            >
-              <Heart className="h-4 w-4" /> Favorites
-            </Link>
             <Button onClick={signOut} variant="ghost" size="sm" className="rounded-full">
               <LogOut className="h-4 w-4" />
             </Button>
