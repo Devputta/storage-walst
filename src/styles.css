@@ -43,41 +43,41 @@
 }
 
 :root {
-  --radius: 1.15rem;
+  --radius: 1.25rem;
 
-  /* Warm cinema — charcoal ink with rosé-gold + amber aurora */
-  --background: oklch(0.15 0.012 30);
-  --foreground: oklch(0.97 0.015 70);
+  /* Cloud vault — deep navy with luminous teal */
+  --background: oklch(0.19 0.04 250);
+  --foreground: oklch(0.97 0.01 220);
 
-  --card: oklch(0.20 0.018 35);
-  --card-foreground: oklch(0.97 0.015 70);
+  --card: oklch(0.26 0.05 250);
+  --card-foreground: oklch(0.97 0.01 220);
 
-  --popover: oklch(0.18 0.018 35);
-  --popover-foreground: oklch(0.97 0.015 70);
+  --popover: oklch(0.23 0.05 250);
+  --popover-foreground: oklch(0.97 0.01 220);
 
-  --primary: oklch(0.82 0.13 55);                /* warm rosé-gold */
-  --primary-foreground: oklch(0.16 0.02 35);
+  --primary: oklch(0.78 0.13 190);               /* luminous teal */
+  --primary-foreground: oklch(0.18 0.04 250);
 
-  --secondary: oklch(0.26 0.02 35);
-  --secondary-foreground: oklch(0.97 0.015 70);
+  --secondary: oklch(0.30 0.05 250);
+  --secondary-foreground: oklch(0.97 0.01 220);
 
-  --muted: oklch(0.23 0.015 35);
-  --muted-foreground: oklch(0.74 0.025 60);
+  --muted: oklch(0.28 0.04 250);
+  --muted-foreground: oklch(0.75 0.03 220);
 
-  --accent: oklch(0.75 0.14 30);                 /* soft amber */
-  --accent-foreground: oklch(0.14 0.02 30);
+  --accent: oklch(0.72 0.14 200);                /* cyan accent */
+  --accent-foreground: oklch(0.16 0.04 250);
 
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 90);
 
-  --border: oklch(1 0 0 / 9%);
+  --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.82 0.13 55 / 55%);
+  --ring: oklch(0.78 0.13 190 / 55%);
 
-  --glass: oklch(0.22 0.02 35 / 55%);
-  --glass-border: oklch(1 0 0 / 11%);
-  --aurora-1: oklch(0.82 0.13 55);
-  --aurora-2: oklch(0.60 0.15 20);
+  --glass: oklch(0.28 0.05 250 / 55%);
+  --glass-border: oklch(1 0 0 / 10%);
+  --aurora-1: oklch(0.78 0.13 190);
+  --aurora-2: oklch(0.45 0.12 260);
 }
 
 .dark { color-scheme: dark; }
