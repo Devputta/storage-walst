@@ -100,9 +100,17 @@ function AppPage() {
     [data],
   );
 
+  const totalItems = useMemo(
+    () => Object.values(counts ?? {}).reduce((a, b) => a + b, 0),
+    [counts],
+  );
+  const totalCollections = (data ?? []).length;
+  const capacity = Math.max(totalCollections, 1) * 1050;
+  const usedPct = Math.min(100, Math.round((totalItems / capacity) * 100));
+
   return (
     <AppShell>
-      <section className="pt-8 pb-12">
+      <section className="pt-8 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -117,23 +125,54 @@ function AppPage() {
           </p>
         </motion.div>
 
-        <div className="mt-8 flex flex-wrap items-center gap-2">
+        {/* Cloud-style storage summary */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="glass mt-8 flex flex-col gap-5 rounded-3xl p-5 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-center gap-5">
+            <div className="relative h-20 w-20 shrink-0">
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: `conic-gradient(var(--primary) ${usedPct}%, color-mix(in oklab, var(--card) 80%, transparent) ${usedPct}% 100%)`,
+                }}
+              />
+              <div className="absolute inset-[6px] rounded-full bg-card/90 backdrop-blur flex flex-col items-center justify-center">
+                <span className="font-display text-lg leading-none">{usedPct}%</span>
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground">used</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Vault storage</p>
+              <p className="mt-1 font-display text-2xl">
+                {totalItems.toLocaleString()} <span className="text-muted-foreground text-base">/ {capacity.toLocaleString()} items</span>
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {totalCollections} collection{totalCollections === 1 ? "" : "s"}
+              </p>
+            </div>
+          </div>
+          <div
+            className="glass-strong inline-flex items-center gap-1.5 self-start rounded-full px-3 py-2 text-xs text-muted-foreground sm:self-auto"
+            title="Each collection has its own favorites — tap the heart on any photo or video."
+          >
+            <Heart className="h-3.5 w-3.5 text-primary" />
+            <span>Favorites live inside each collection</span>
+          </div>
+        </motion.div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
           <div className="glass flex min-w-[220px] flex-1 items-center gap-2 rounded-full px-4 py-2.5 sm:max-w-md">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search collections…"
+              placeholder="Search anything here"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
             />
-          </div>
-          <div
-            className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs text-muted-foreground"
-            title="Each collection has its own favorites — tap the heart on any photo or video."
-          >
-            <Heart className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden sm:inline">Favorites live inside each collection</span>
-            <span className="sm:hidden">Favorites in-collection</span>
           </div>
           {hiddenCount > 0 && (
             <button
@@ -149,6 +188,7 @@ function AppPage() {
         </div>
 
       </section>
+
 
       <section>
         {isLoading ? (
