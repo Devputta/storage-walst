@@ -84,7 +84,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Collection | null> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,nickname,is_private,has_pin")
+        .select("id,title,nickname,is_private,has_pin,is_invisible")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
