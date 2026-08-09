@@ -53,6 +53,7 @@ type Collection = {
   nickname: string | null;
   is_private: boolean;
   has_pin: boolean;
+  is_invisible: boolean;
 };
 
 type ViewMode = "grid" | "list";
