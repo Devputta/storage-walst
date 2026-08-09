@@ -226,7 +226,13 @@ function AppPage() {
               const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
               return (
                 <div key={c.id} onClick={() => locked && setUnlocked((u) => ({ ...u, [c.id]: false }))}>
-                  <CollectionCard c={card} locked={locked} onDelete={() => deleteCollection(c.id, c.title)} />
+                  <CollectionCard
+                    c={card}
+                    locked={locked}
+                    onDelete={() => deleteCollection(c.id, c.title)}
+                    onUnhide={c.is_invisible ? () => unhideCollection(c.id) : undefined}
+                  />
+
                 </div>
               );
             })}
