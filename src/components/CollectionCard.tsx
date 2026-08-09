@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Lock, Eye, Trash2 } from "lucide-react";
+import { Lock, Eye, EyeOff, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useSignedUrl } from "@/lib/storage";
 
@@ -17,10 +17,12 @@ export function CollectionCard({
   c,
   locked,
   onDelete,
+  onUnhide,
 }: {
   c: CollectionCardData;
   locked: boolean;
   onDelete?: () => void;
+  onUnhide?: () => void;
 }) {
   const { data: coverUrl } = useSignedUrl(c.cover_url);
   const displayTitle = locked && c.nickname ? c.nickname : c.title;

@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import lumenLogo from "@/assets/lumen-logo.png.asset.json";
 
 export function Logo({ enableSecret = true }: { enableSecret?: boolean }) {
   const navigate = useNavigate();
@@ -17,16 +18,14 @@ export function Logo({ enableSecret = true }: { enableSecret?: boolean }) {
   return (
     <button
       onClick={handleClick}
-      className="group flex items-center gap-2.5 select-none"
+      className="group flex items-center select-none"
       aria-label="Lumen"
     >
-      <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent ring-glow">
-        <span className="absolute inset-[3px] rounded-full bg-background/70 backdrop-blur" />
-        <span className="relative font-display text-base font-semibold text-gradient">L</span>
-      </span>
-      <span className="font-display text-xl tracking-tight">
-        Lumen<span className="text-muted-foreground">.</span>
-      </span>
+      <img
+        src={lumenLogo.url}
+        alt="Lumen"
+        className="h-7 w-auto object-contain mix-blend-screen transition group-hover:opacity-90 md:h-8"
+      />
     </button>
   );
 }
