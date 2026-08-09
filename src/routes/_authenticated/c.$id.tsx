@@ -14,6 +14,8 @@ import {
   ListChecks,
   Pencil,
   Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -53,6 +55,7 @@ type Collection = {
   nickname: string | null;
   is_private: boolean;
   has_pin: boolean;
+  is_invisible: boolean;
 };
 
 type ViewMode = "grid" | "list";
@@ -83,7 +86,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Collection | null> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,nickname,is_private,has_pin")
+        .select("id,title,nickname,is_private,has_pin,is_invisible")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -122,6 +125,17 @@ function CollectionPage() {
     toast.success(m.is_favorite ? "Removed from favorites" : "Added to favorites");
     qc.invalidateQueries({ queryKey: ["media", id] });
   };
+
+  const onToggleHidden = async () => {
+    if (!collection) return;
+    const next = !collection.is_invisible;
+    const { error } = await supabase.from("collections").update({ is_invisible: next }).eq("id", id);
+    if (error) { toast.error("Could not update visibility"); return; }
+    toast.success(next ? "Collection hidden" : "Collection unhidden");
+    qc.invalidateQueries({ queryKey: ["collection", id] });
+    qc.invalidateQueries({ queryKey: ["collections"] });
+  };
+
 
   const onDelete = async (m: Media) => {
     if (!confirm("Delete this item?")) return;
@@ -193,6 +207,15 @@ function CollectionPage() {
               <LayoutGrid className="h-4 w-4" />
             </button>
           </div>
+          {!needsPin && collection && (
+            <button
+              onClick={onToggleHidden}
+              className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
+            >
+              {collection.is_invisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              {collection.is_invisible ? "Unhide" : "Hide"}
+            </button>
+          )}
           {!needsPin && collection && (
             <CollectionSettingsDialog
               collectionId={id}
