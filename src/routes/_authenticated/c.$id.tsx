@@ -206,6 +206,15 @@ function CollectionPage() {
             </button>
           </div>
           {!needsPin && collection && (
+            <button
+              onClick={onToggleHidden}
+              className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
+            >
+              {collection.is_invisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              {collection.is_invisible ? "Unhide" : "Hide"}
+            </button>
+          )}
+          {!needsPin && collection && (
             <CollectionSettingsDialog
               collectionId={id}
               currentNickname={collection.nickname}
