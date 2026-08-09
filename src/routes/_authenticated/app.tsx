@@ -55,6 +55,21 @@ function AppPage() {
     }
   };
 
+  const unhideCollection = async (cid: string) => {
+    const { error } = await supabase
+      .from("collections")
+      .update({ is_invisible: false })
+      .eq("id", cid);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Moved back to your home page");
+    qc.invalidateQueries({ queryKey: ["collections"] });
+  };
+
+
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["collections"],
@@ -211,7 +226,13 @@ function AppPage() {
               const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
               return (
                 <div key={c.id} onClick={() => locked && setUnlocked((u) => ({ ...u, [c.id]: false }))}>
-                  <CollectionCard c={card} locked={locked} onDelete={() => deleteCollection(c.id, c.title)} />
+                  <CollectionCard
+                    c={card}
+                    locked={locked}
+                    onDelete={() => deleteCollection(c.id, c.title)}
+                    onUnhide={c.is_invisible ? () => unhideCollection(c.id) : undefined}
+                  />
+
                 </div>
               );
             })}

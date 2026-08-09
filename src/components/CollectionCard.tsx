@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Lock, Eye, Trash2 } from "lucide-react";
+import { Lock, Eye, EyeOff, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useSignedUrl } from "@/lib/storage";
 
@@ -17,10 +17,12 @@ export function CollectionCard({
   c,
   locked,
   onDelete,
+  onUnhide,
 }: {
   c: CollectionCardData;
   locked: boolean;
   onDelete?: () => void;
+  onUnhide?: () => void;
 }) {
   const { data: coverUrl } = useSignedUrl(c.cover_url);
   const displayTitle = locked && c.nickname ? c.nickname : c.title;
@@ -57,18 +59,33 @@ export function CollectionCard({
           </div>
         )}
 
-        <div className="absolute left-4 right-4 top-4 flex justify-between">
+        <div className="absolute left-4 right-14 top-4 flex items-start justify-between gap-2">
           {c.is_private && (
             <span className="glass inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider text-primary">
               <Lock className="h-3 w-3" /> Private
             </span>
           )}
           {c.is_invisible && (
-            <span className="glass inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider text-accent ml-auto">
-              <Eye className="h-3 w-3" /> Hidden
+            <span
+              role={onUnhide ? "button" : undefined}
+              tabIndex={onUnhide ? 0 : undefined}
+              title={onUnhide ? "Unhide — show on home page" : undefined}
+              onClick={(e) => {
+                if (!onUnhide) return;
+                e.preventDefault();
+                e.stopPropagation();
+                onUnhide();
+              }}
+              className={`glass z-10 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider text-accent ml-auto ${
+                onUnhide ? "cursor-pointer hover:text-foreground" : ""
+              }`}
+            >
+              <EyeOff className="h-3 w-3" /> Hidden
+              {onUnhide && <Eye className="h-3 w-3 opacity-70" />}
             </span>
           )}
         </div>
+
 
         <div className="absolute bottom-0 left-0 right-0 p-5">
           <h3 className="font-display text-2xl leading-tight text-white">{displayTitle}</h3>
