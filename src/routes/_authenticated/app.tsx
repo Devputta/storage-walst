@@ -55,6 +55,21 @@ function AppPage() {
     }
   };
 
+  const unhideCollection = async (cid: string) => {
+    const { error } = await supabase
+      .from("collections")
+      .update({ is_invisible: false })
+      .eq("id", cid);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Moved back to your home page");
+    qc.invalidateQueries({ queryKey: ["collections"] });
+  };
+
+
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["collections"],
