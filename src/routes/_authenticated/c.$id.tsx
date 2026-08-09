@@ -124,6 +124,17 @@ function CollectionPage() {
     qc.invalidateQueries({ queryKey: ["media", id] });
   };
 
+  const onToggleHidden = async () => {
+    if (!collection) return;
+    const next = !collection.is_invisible;
+    const { error } = await supabase.from("collections").update({ is_invisible: next }).eq("id", id);
+    if (error) { toast.error("Could not update visibility"); return; }
+    toast.success(next ? "Collection hidden" : "Collection unhidden");
+    qc.invalidateQueries({ queryKey: ["collection", id] });
+    qc.invalidateQueries({ queryKey: ["collections"] });
+  };
+
+
   const onDelete = async (m: Media) => {
     if (!confirm("Delete this item?")) return;
     await supabase.storage.from("media").remove([m.storage_path]);
