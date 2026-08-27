@@ -1,16 +1,25 @@
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut, UserRound } from "lucide-react";
+import { LogOut, UserRound, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { StorageDonut } from "./StorageDonut";
-import { useStorageStats } from "@/lib/useStorageStats";
+import { Input } from "@/components/ui/input";
+import { NewCollectionDialog } from "./NewCollectionDialog";
 import type { ReactNode } from "react";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  search,
+  onSearchChange,
+  showNewCollection = false,
+}: {
+  children: ReactNode;
+  search?: string;
+  onSearchChange?: (v: string) => void;
+  showNewCollection?: boolean;
+}) {
   const navigate = useNavigate();
-  const { usedPct } = useStorageStats();
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
