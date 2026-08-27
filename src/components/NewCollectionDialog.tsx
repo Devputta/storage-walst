@@ -10,7 +10,7 @@ import { setCollectionPin, setRecoveryQuestion } from "@/lib/collections.functio
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function NewCollectionDialog() {
+export function NewCollectionDialog({ variant = "card" }: { variant?: "card" | "icon" }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
