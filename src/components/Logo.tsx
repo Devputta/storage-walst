@@ -24,7 +24,7 @@ export function Logo({ enableSecret = true }: { enableSecret?: boolean }) {
       <img
         src={lumenLogo.url}
         alt="Lumen"
-        className="h-7 w-auto object-contain mix-blend-screen transition group-hover:opacity-90 md:h-8"
+        className="h-8 w-auto object-contain mix-blend-screen drop-shadow-[0_0_12px_color-mix(in_oklab,var(--primary)_45%,transparent)] transition group-hover:scale-[1.03] group-hover:opacity-95 md:h-9"
       />
     </button>
   );
