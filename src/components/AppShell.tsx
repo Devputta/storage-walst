@@ -4,10 +4,13 @@ import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { StorageDonut } from "./StorageDonut";
+import { useStorageStats } from "@/lib/useStorageStats";
 import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const { usedPct } = useStorageStats();
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
