@@ -32,14 +32,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className="sticky top-0 z-40">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="glass rounded-full px-4 py-2">
-            <Link to="/app"><Logo /></Link>
-          </div>
-          <div className="glass flex items-center gap-1 rounded-full px-1.5 py-1">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground">
+          <Link to="/app"><Logo /></Link>
+          <div className="flex items-center gap-2">
+            <span className="glass flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground">
               <UserRound className="h-4 w-4" />
             </span>
-            <Button onClick={signOut} variant="ghost" size="sm" className="rounded-full text-primary">
+            <Button
+              onClick={signOut}
+              variant="ghost"
+              size="icon"
+              className="glass h-10 w-10 rounded-full text-primary hover:text-primary"
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
