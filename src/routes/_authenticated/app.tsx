@@ -105,26 +105,24 @@ function AppPage() {
     const list = data ?? [];
     return list.filter((c) => {
       if (c.is_invisible && !showHidden && !search) return false;
+      if (c.is_private && !showLocked && !search) return false;
       if (search && !c.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [data, search, showHidden]);
+  }, [data, search, showHidden, showLocked]);
 
   const hiddenCount = useMemo(
     () => (data ?? []).filter((c) => c.is_invisible).length,
     [data],
   );
 
-  const totalItems = useMemo(
-    () => Object.values(counts ?? {}).reduce((a, b) => a + b, 0),
-    [counts],
+  const lockedCount = useMemo(
+    () => (data ?? []).filter((c) => c.is_private).length,
+    [data],
   );
-  const totalCollections = (data ?? []).length;
-  const capacity = Math.max(totalCollections, 1) * 1050;
-  const usedPct = Math.min(100, Math.round((totalItems / capacity) * 100));
 
   return (
-    <AppShell>
+    <AppShell search={search} onSearchChange={setSearch} showNewCollection>
       <section className="pt-8 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
