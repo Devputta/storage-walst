@@ -4,10 +4,13 @@ import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { StorageDonut } from "./StorageDonut";
+import { useStorageStats } from "@/lib/useStorageStats";
 import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const { usedPct } = useStorageStats();
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
@@ -34,9 +37,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link to="/app"><Logo /></Link>
           <div className="flex items-center gap-2">
-            <span className="glass flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground">
+            <Link
+              to="/profile"
+              title="Vault storage"
+              className="glass flex h-10 items-center gap-2 rounded-full pl-1.5 pr-3 text-xs text-muted-foreground transition hover:text-foreground"
+            >
+              <StorageDonut usedPct={usedPct} size={28} />
+              <span className="hidden sm:inline">{usedPct}% used</span>
+            </Link>
+            <Link
+              to="/profile"
+              title="Profile"
+              className="glass flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+            >
               <UserRound className="h-4 w-4" />
-            </span>
+            </Link>
             <Button
               onClick={signOut}
               variant="ghost"
