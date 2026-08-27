@@ -1,16 +1,25 @@
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut, UserRound } from "lucide-react";
+import { LogOut, UserRound, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { StorageDonut } from "./StorageDonut";
-import { useStorageStats } from "@/lib/useStorageStats";
+import { Input } from "@/components/ui/input";
+import { NewCollectionDialog } from "./NewCollectionDialog";
 import type { ReactNode } from "react";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  search,
+  onSearchChange,
+  showNewCollection = false,
+}: {
+  children: ReactNode;
+  search?: string;
+  onSearchChange?: (v: string) => void;
+  showNewCollection?: boolean;
+}) {
   const navigate = useNavigate();
-  const { usedPct } = useStorageStats();
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
@@ -37,14 +46,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link to="/app"><Logo /></Link>
           <div className="flex items-center gap-2">
-            <Link
-              to="/profile"
-              title="Vault storage"
-              className="glass flex h-10 items-center gap-2 rounded-full pl-1.5 pr-3 text-xs text-muted-foreground transition hover:text-foreground"
-            >
-              <StorageDonut usedPct={usedPct} size={28} />
-              <span className="hidden sm:inline">{usedPct}% used</span>
-            </Link>
+            {onSearchChange && (
+              <div className="glass flex h-10 w-36 items-center gap-2 rounded-full px-4 sm:w-64">
+                <Input
+                  placeholder="Search"
+                  value={search ?? ""}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="h-7 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+                />
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </div>
+            )}
+            {showNewCollection && <NewCollectionDialog variant="icon" />}
             <Link
               to="/profile"
               title="Profile"

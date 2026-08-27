@@ -10,7 +10,7 @@ import { setCollectionPin, setRecoveryQuestion } from "@/lib/collections.functio
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function NewCollectionDialog() {
+export function NewCollectionDialog({ variant = "card" }: { variant?: "card" | "icon" }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -65,14 +65,24 @@ export function NewCollectionDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="group relative aspect-[4/5] rounded-3xl border border-dashed border-white/15 bg-white/[0.02] transition hover:border-primary/40 hover:bg-white/[0.04]">
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-            <div className="glass flex h-14 w-14 items-center justify-center rounded-full transition group-hover:scale-110">
-              <Plus className="h-6 w-6 text-primary" />
+        {variant === "icon" ? (
+          <button
+            title="New collection"
+            aria-label="New collection"
+            className="glass flex h-10 w-10 items-center justify-center rounded-full text-primary transition hover:scale-105"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        ) : (
+          <button className="group relative aspect-[4/5] rounded-3xl border border-dashed border-white/15 bg-white/[0.02] transition hover:border-primary/40 hover:bg-white/[0.04]">
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+              <div className="glass flex h-14 w-14 items-center justify-center rounded-full transition group-hover:scale-110">
+                <Plus className="h-6 w-6 text-primary" />
+              </div>
+              <span className="font-display text-lg">New collection</span>
             </div>
-            <span className="font-display text-lg">New collection</span>
-          </div>
-        </button>
+          </button>
+        )}
       </DialogTrigger>
       <DialogContent className="glass-strong border-white/10 sm:max-w-md rounded-3xl">
         <DialogHeader>
