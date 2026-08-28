@@ -113,6 +113,61 @@ function ProfilePage() {
             </div>
           ))}
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mx-auto mt-6 max-w-xl"
+        >
+          <div className="mb-3 flex items-center justify-between px-1">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Your collections
+            </p>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Heart className="h-3.5 w-3.5 text-primary" /> {favCount ?? 0} favorites
+            </span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {(collections ?? []).map((c) => (
+              <Link
+                key={c.id}
+                to="/c/$id"
+                params={{ id: c.id }}
+                className="glass flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition hover:ring-1 hover:ring-primary/30"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-display text-lg">
+                    {c.is_private && c.nickname ? c.nickname : c.title}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Created{" "}
+                    {new Date(c.created_at).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {c.is_private && (
+                    <span className="glass inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] uppercase tracking-wider text-primary">
+                      <Lock className="h-3 w-3" /> {c.has_pin ? "PIN" : "Locked"}
+                    </span>
+                  )}
+                  {c.is_invisible && (
+                    <span className="glass inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] uppercase tracking-wider text-accent">
+                      <EyeOff className="h-3 w-3" /> Hidden
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+            {collections && collections.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground">No collections yet.</p>
+            )}
+          </div>
+        </motion.div>
       </section>
     </AppShell>
   );
