@@ -44,7 +44,25 @@ export function AppShell({
 
       <header className="sticky top-0 z-40">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/app"><Logo /></Link>
+          <div className="flex items-center gap-3">
+            <Link to="/app"><Logo /></Link>
+            <nav className="hidden items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground sm:flex">
+              <Link
+                to="/app"
+                activeProps={{ className: "text-foreground" }}
+                className="rounded-full px-3 py-1.5 transition hover:text-foreground"
+              >
+                Home
+              </Link>
+              <Link
+                to="/about"
+                activeProps={{ className: "text-foreground" }}
+                className="rounded-full px-3 py-1.5 transition hover:text-foreground"
+              >
+                About
+              </Link>
+            </nav>
+          </div>
           <div className="flex items-center gap-2">
             {onSearchChange && (
               <div className="glass flex h-10 w-36 items-center gap-2 rounded-full px-4 sm:w-64">

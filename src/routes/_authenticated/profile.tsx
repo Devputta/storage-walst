@@ -1,10 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { UserRound, Database, FolderOpen, ImagePlay } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { UserRound, Database, FolderOpen, ImagePlay, Lock, EyeOff, Heart } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { StorageDonut } from "@/components/StorageDonut";
 import { useStorageStats } from "@/lib/useStorageStats";
 import { useSession } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+
+type CollectionInfo = {
+  id: string;
+  title: string;
+  nickname: string | null;
+  created_at: string;
+  is_private: boolean;
+  is_invisible: boolean;
+  has_pin: boolean;
+};
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — Lumen" }] }),
@@ -18,6 +30,29 @@ function ProfilePage() {
     (user?.user_metadata?.username as string | undefined) ??
     user?.email?.split("@")[0] ??
     "Collector";
+
+  const { data: collections } = useQuery({
+    queryKey: ["profile-collections"],
+    queryFn: async (): Promise<CollectionInfo[]> => {
+      const { data, error } = await supabase
+        .from("collections")
+        .select("id,title,nickname,created_at,is_private,is_invisible,has_pin")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as CollectionInfo[];
+    },
+  });
+
+  const { data: favCount } = useQuery({
+    queryKey: ["profile-fav-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("media")
+        .select("id", { count: "exact", head: true })
+        .eq("is_favorite", true);
+      return count ?? 0;
+    },
+  });
 
   return (
     <AppShell>
@@ -77,6 +112,61 @@ function ProfilePage() {
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
             </div>
           ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mx-auto mt-6 max-w-xl"
+        >
+          <div className="mb-3 flex items-center justify-between px-1">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Your collections
+            </p>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Heart className="h-3.5 w-3.5 text-primary" /> {favCount ?? 0} favorites
+            </span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {(collections ?? []).map((c) => (
+              <Link
+                key={c.id}
+                to="/c/$id"
+                params={{ id: c.id }}
+                className="glass flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition hover:ring-1 hover:ring-primary/30"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-display text-lg">
+                    {c.is_private && c.nickname ? c.nickname : c.title}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Created{" "}
+                    {new Date(c.created_at).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {c.is_private && (
+                    <span className="glass inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] uppercase tracking-wider text-primary">
+                      <Lock className="h-3 w-3" /> {c.has_pin ? "PIN" : "Locked"}
+                    </span>
+                  )}
+                  {c.is_invisible && (
+                    <span className="glass inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] uppercase tracking-wider text-accent">
+                      <EyeOff className="h-3 w-3" /> Hidden
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+            {collections && collections.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground">No collections yet.</p>
+            )}
+          </div>
         </motion.div>
       </section>
     </AppShell>

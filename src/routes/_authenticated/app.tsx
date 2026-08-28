@@ -1,13 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Search, Eye, EyeOff, Heart, Lock } from "lucide-react";
+import { Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
 import { NewCollectionDialog } from "@/components/NewCollectionDialog";
-import { Input } from "@/components/ui/input";
+import { RecentMedia } from "@/components/RecentMedia";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -140,37 +149,62 @@ function AppPage() {
         </motion.div>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          <div
-            className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs text-muted-foreground"
-            title="Each collection has its own favorites — tap the heart on any photo or video."
-          >
-            <Heart className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden sm:inline">Favorites live inside each collection</span>
-          </div>
-          {lockedCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowLocked((v) => !v)}
-              className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs transition hover:text-foreground"
-              aria-pressed={showLocked}
-            >
-              <Lock className="h-3.5 w-3.5 text-primary" />
-              {showLocked ? `Hide locked (${lockedCount})` : `Show locked (${lockedCount})`}
-            </button>
-          )}
-          {hiddenCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowHidden((v) => !v)}
-              className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs transition hover:text-foreground"
-              aria-pressed={showHidden}
-            >
-              {showHidden ? <EyeOff className="h-3.5 w-3.5 text-accent" /> : <Eye className="h-3.5 w-3.5 text-accent" />}
-              {showHidden ? `Hiding ${hiddenCount}` : `Show hidden (${hiddenCount})`}
-            </button>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs transition hover:text-foreground"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+                View options
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64 rounded-2xl">
+              <DropdownMenuLabel>Show in your space</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={showLocked}
+                onCheckedChange={(v) => setShowLocked(!!v)}
+                disabled={lockedCount === 0}
+              >
+                <span className="flex items-center gap-2">
+                  <Lock className="h-3.5 w-3.5 text-primary" /> Locked ({lockedCount})
+                </span>
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showHidden}
+                onCheckedChange={(v) => setShowHidden(!!v)}
+                disabled={hiddenCount === 0}
+              >
+                <span className="flex items-center gap-2">
+                  {showHidden ? (
+                    <EyeOff className="h-3.5 w-3.5 text-accent" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5 text-accent" />
+                  )}
+                  Hidden ({hiddenCount})
+                </span>
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/about" className="cursor-pointer">
+                  <Info className="mr-2 h-3.5 w-3.5 text-primary" /> How Lumen works
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuLabel className="flex items-start gap-2 pt-2 text-[11px] font-normal text-muted-foreground">
+                <Heart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                Favorites live inside each collection — tap the heart on any photo or video.
+              </DropdownMenuLabel>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </section>
+
+      <section className="pb-10">
+        <RecentMedia />
+      </section>
+
+
 
 
       <section>
