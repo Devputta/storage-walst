@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Search, Eye, EyeOff, Heart } from "lucide-react";
+import { Search, Eye, EyeOff, Heart, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
@@ -29,6 +29,7 @@ function AppPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [showHidden, setShowHidden] = useState(false);
+  const [showLocked, setShowLocked] = useState(false);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
 
   const deleteCollection = async (cid: string, title: string) => {
