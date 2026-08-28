@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVaultRouteImport } from './routes/_authenticated/vault'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedAboutRouteImport } from './routes/_authenticated/about'
 import { Route as AuthenticatedCIdRouteImport } from './routes/_authenticated/c.$id'
 
 const AuthRoute = AuthRouteImport.update({
@@ -46,6 +47,11 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAboutRoute = AuthenticatedAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCIdRoute = AuthenticatedCIdRouteImport.update({
   id: '/c/$id',
   path: '/c/$id',
@@ -55,6 +61,7 @@ const AuthenticatedCIdRoute = AuthenticatedCIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/about': typeof AuthenticatedAboutRoute
   '/app': typeof AuthenticatedAppRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/vault': typeof AuthenticatedVaultRoute
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/about': typeof AuthenticatedAboutRoute
   '/app': typeof AuthenticatedAppRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/vault': typeof AuthenticatedVaultRoute
@@ -73,6 +81,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/about': typeof AuthenticatedAboutRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/vault': typeof AuthenticatedVaultRoute
@@ -80,14 +89,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/app' | '/profile' | '/vault' | '/c/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/about'
+    | '/app'
+    | '/profile'
+    | '/vault'
+    | '/c/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/app' | '/profile' | '/vault' | '/c/$id'
+  to: '/' | '/auth' | '/about' | '/app' | '/profile' | '/vault' | '/c/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/about'
     | '/_authenticated/app'
     | '/_authenticated/profile'
     | '/_authenticated/vault'
@@ -144,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/about': {
+      id: '/_authenticated/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AuthenticatedAboutRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/c/$id': {
       id: '/_authenticated/c/$id'
       path: '/c/$id'
@@ -155,6 +179,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAboutRoute: typeof AuthenticatedAboutRoute
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedVaultRoute: typeof AuthenticatedVaultRoute
@@ -162,6 +187,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAboutRoute: AuthenticatedAboutRoute,
   AuthenticatedAppRoute: AuthenticatedAppRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedVaultRoute: AuthenticatedVaultRoute,
