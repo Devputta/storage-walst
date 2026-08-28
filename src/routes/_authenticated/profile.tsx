@@ -1,10 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { UserRound, Database, FolderOpen, ImagePlay } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { UserRound, Database, FolderOpen, ImagePlay, Lock, EyeOff, Heart } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { StorageDonut } from "@/components/StorageDonut";
 import { useStorageStats } from "@/lib/useStorageStats";
 import { useSession } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+
+type CollectionInfo = {
+  id: string;
+  title: string;
+  nickname: string | null;
+  created_at: string;
+  is_private: boolean;
+  is_invisible: boolean;
+  has_pin: boolean;
+};
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — Lumen" }] }),
