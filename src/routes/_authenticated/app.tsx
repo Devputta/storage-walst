@@ -1,13 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Search, Eye, EyeOff, Heart, Lock } from "lucide-react";
+import { Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
 import { NewCollectionDialog } from "@/components/NewCollectionDialog";
-import { Input } from "@/components/ui/input";
+import { RecentMedia } from "@/components/RecentMedia";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app")({
