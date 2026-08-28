@@ -31,6 +31,29 @@ function ProfilePage() {
     user?.email?.split("@")[0] ??
     "Collector";
 
+  const { data: collections } = useQuery({
+    queryKey: ["profile-collections"],
+    queryFn: async (): Promise<CollectionInfo[]> => {
+      const { data, error } = await supabase
+        .from("collections")
+        .select("id,title,nickname,created_at,is_private,is_invisible,has_pin")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as CollectionInfo[];
+    },
+  });
+
+  const { data: favCount } = useQuery({
+    queryKey: ["profile-fav-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("media")
+        .select("id", { count: "exact", head: true })
+        .eq("is_favorite", true);
+      return count ?? 0;
+    },
+  });
+
   return (
     <AppShell>
       <section className="pt-10 pb-8">
