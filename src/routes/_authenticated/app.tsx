@@ -132,7 +132,7 @@ function AppPage() {
   );
 
   return (
-    <AppShell search={search} onSearchChange={setSearch} showNewCollection>
+    <AppShell showNewCollection>
       <section className="pt-8 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
