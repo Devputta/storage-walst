@@ -6,8 +6,8 @@ import { Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info } from "
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
-import { NewCollectionDialog } from "@/components/NewCollectionDialog";
 import { RecentMedia } from "@/components/RecentMedia";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -148,7 +148,17 @@ function AppPage() {
           </p>
         </motion.div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-2">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex">
+          <div className="glass flex min-w-0 h-10 items-center gap-2 rounded-full px-4 sm:w-64">
+            <Input
+              aria-label="Search collections"
+              placeholder="Search collections"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-7 min-w-0 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            />
+            <span aria-hidden className="shrink-0 text-xs text-muted-foreground">⌕</span>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -219,7 +229,6 @@ function AppPage() {
             layout
             className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4"
           >
-            <NewCollectionDialog />
             {filtered.map((c) => {
               const card: CollectionCardData = { ...c, count: counts?.[c.id] };
               const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
