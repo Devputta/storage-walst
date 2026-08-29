@@ -27,7 +27,9 @@ function ProfilePage() {
   const { user } = useSession();
   const { totalItems, totalCollections, capacity, usedPct } = useStorageStats();
   const displayName =
+    (user?.user_metadata?.display_name as string | undefined) ??
     (user?.user_metadata?.username as string | undefined) ??
+    (user?.user_metadata?.full_name as string | undefined) ??
     user?.email?.split("@")[0] ??
     "Collector";
 
@@ -69,9 +71,6 @@ function ProfilePage() {
           <h1 className="mt-4 font-display text-4xl md:text-5xl">
             {displayName}
           </h1>
-          {user?.email && (
-            <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
-          )}
         </motion.div>
 
         <motion.div

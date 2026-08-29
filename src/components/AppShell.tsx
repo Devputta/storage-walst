@@ -1,25 +1,36 @@
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut, UserRound, Search } from "lucide-react";
+import { LogOut, UserRound, Moon, Sun } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { NewCollectionDialog } from "./NewCollectionDialog";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export function AppShell({
   children,
-  search,
-  onSearchChange,
   showNewCollection = false,
 }: {
   children: ReactNode;
-  search?: string;
-  onSearchChange?: (v: string) => void;
   showNewCollection?: boolean;
 }) {
   const navigate = useNavigate();
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("lumen-theme");
+    const shouldUseDark = savedTheme !== "light";
+    setIsDark(shouldUseDark);
+    document.documentElement.classList.toggle("dark", shouldUseDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextIsDark = !isDark;
+    setIsDark(nextIsDark);
+    window.localStorage.setItem("lumen-theme", nextIsDark ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", nextIsDark);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
@@ -43,8 +54,8 @@ export function AppShell({
       </div>
 
       <header className="sticky top-0 z-40">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 sm:flex sm:justify-between sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <Link to="/app"><Logo /></Link>
             <nav className="hidden items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground sm:flex">
               <Link
@@ -63,22 +74,22 @@ export function AppShell({
               </Link>
             </nav>
           </div>
-          <div className="flex items-center gap-2">
-            {onSearchChange && (
-              <div className="glass flex h-10 w-36 items-center gap-2 rounded-full px-4 sm:w-64">
-                <Input
-                  placeholder="Search"
-                  value={search ?? ""}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  className="h-7 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
-                />
-                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </div>
-            )}
+          <div className="flex shrink-0 items-center gap-2">
             {showNewCollection && <NewCollectionDialog variant="icon" />}
+            <Button
+              onClick={toggleTheme}
+              variant="ghost"
+              size="icon"
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className="glass min-h-10 min-w-10 rounded-full text-primary hover:text-primary"
+            >
+              {isDark ? <Sun /> : <Moon />}
+            </Button>
             <Link
               to="/profile"
               title="Profile"
+              aria-label="Profile"
               className="glass flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
             >
               <UserRound className="h-4 w-4" />
@@ -87,7 +98,9 @@ export function AppShell({
               onClick={signOut}
               variant="ghost"
               size="icon"
-              className="glass h-10 w-10 rounded-full text-primary hover:text-primary"
+              aria-label="Sign out"
+              title="Sign out"
+              className="glass min-h-10 min-w-10 rounded-full text-primary hover:text-primary"
             >
               <LogOut className="h-4 w-4" />
             </Button>
