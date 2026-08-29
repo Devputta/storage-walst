@@ -96,13 +96,25 @@ export function RecentMedia() {
   const { data, isLoading } = useQuery({
     queryKey: ["recent-media"],
     queryFn: async (): Promise<RecentItem[]> => {
+      // Home only shows moments from visible (non-hidden, non-private) collections
+      const { data: cols, error: cErr } = await supabase
+        .from("collections")
+        .select("id,is_invisible,is_private");
+      if (cErr) throw cErr;
+      const hiddenIds = new Set(
+        (cols ?? [])
+          .filter((c) => c.is_invisible || c.is_private)
+          .map((c) => c.id as string),
+      );
       const { data, error } = await supabase
         .from("media")
         .select("id,title,description,storage_path,media_type,collection_id")
         .order("created_at", { ascending: false })
-        .limit(12);
+        .limit(60);
       if (error) throw error;
-      return data as RecentItem[];
+      return (data as RecentItem[])
+        .filter((m) => !m.collection_id || !hiddenIds.has(m.collection_id))
+        .slice(0, 12);
     },
   });
 

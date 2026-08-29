@@ -114,8 +114,8 @@ function AppPage() {
   const filtered = useMemo(() => {
     const list = data ?? [];
     return list.filter((c) => {
-      if (c.is_invisible && !showHidden && !search) return false;
-      if (c.is_private && !showLocked && !search) return false;
+      if (c.is_invisible && !showHidden) return false;
+      if (c.is_private && !showLocked) return false;
       if (search && !c.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });

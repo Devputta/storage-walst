@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import lumenLogo from "@/assets/lumen-logo.png.asset.json";
+import lumenMark from "@/assets/lumen-mark.png";
 
 export function Logo({ enableSecret = true }: { enableSecret?: boolean }) {
   const navigate = useNavigate();
@@ -18,29 +18,19 @@ export function Logo({ enableSecret = true }: { enableSecret?: boolean }) {
   return (
     <button
       onClick={handleClick}
-      className="glass group flex min-w-0 max-w-[48vw] select-none items-center justify-center rounded-[999px] px-3 py-1.5 ring-1 ring-primary/15 transition hover:ring-primary/30 sm:px-4 sm:py-2"
+      className="glass group flex min-w-0 select-none items-center gap-2 rounded-[999px] py-1.5 pl-1.5 pr-4 ring-1 ring-primary/15 transition hover:ring-primary/30"
       aria-label="Lumen"
     >
-      {/* The wordmark is used as a mask so it always picks up the app palette */}
-      <span
-        role="img"
-        aria-label="Lumen"
-        className="block h-6 w-[min(8.5rem,36vw)] transition group-hover:opacity-90 sm:h-7 sm:w-[8.5rem] md:h-8 md:w-[9rem]"
-        style={{
-          backgroundImage:
-            "linear-gradient(100deg, color-mix(in oklab, var(--foreground) 88%, transparent), var(--primary) 45%, var(--accent) 85%)",
-          WebkitMaskImage: `url(${lumenLogo.url})`,
-          maskImage: `url(${lumenLogo.url})`,
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "left center",
-          maskPosition: "left center",
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
-          filter:
-            "drop-shadow(0 0 14px color-mix(in oklab, var(--primary) 35%, transparent))",
-        }}
+      <img
+        src={lumenMark}
+        alt="Lumen aperture logo"
+        width={512}
+        height={512}
+        className="h-8 w-8 rounded-full object-contain drop-shadow-[0_0_10px_color-mix(in_oklab,var(--primary)_45%,transparent)] transition group-hover:rotate-45 group-hover:duration-500 sm:h-9 sm:w-9"
       />
+      <span className="font-display text-base font-semibold tracking-[0.25em] text-gradient sm:text-lg">
+        LUMEN
+      </span>
     </button>
   );
 }
