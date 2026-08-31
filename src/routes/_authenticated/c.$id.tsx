@@ -19,10 +19,12 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
 
 import { UploadDialog } from "@/components/UploadDialog";
 import { PinDialog } from "@/components/PinDialog";
 import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog";
+import { CollectionEditDialog } from "@/components/CollectionEditDialog";
 import { DownloadCollectionButton } from "@/components/DownloadCollectionButton";
 import { toast } from "sonner";
 
@@ -52,10 +54,12 @@ type Media = {
 type Collection = {
   id: string;
   title: string;
+  description: string | null;
   nickname: string | null;
   is_private: boolean;
   has_pin: boolean;
   is_invisible: boolean;
+  created_at: string;
 };
 
 type ViewMode = "grid" | "list";
@@ -86,7 +90,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Collection | null> => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id,title,nickname,is_private,has_pin,is_invisible")
+        .select("id,title,description,nickname,is_private,has_pin,is_invisible,created_at")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -134,6 +138,37 @@ function CollectionPage() {
     toast.success(next ? "Collection hidden" : "Collection unhidden");
     qc.invalidateQueries({ queryKey: ["collection", id] });
     qc.invalidateQueries({ queryKey: ["collections"] });
+  };
+
+  const onDeleteCollection = async () => {
+    if (!collection) return;
+    if (!confirm(`Delete “${collection.title}” and all its photos and videos? This cannot be undone.`)) return;
+
+    try {
+      const { data: items, error: mediaError } = await supabase
+        .from("media")
+        .select("storage_path")
+        .eq("collection_id", id)
+        .range(0, 1049);
+      if (mediaError) throw mediaError;
+
+      const paths = (items ?? []).map((item) => item.storage_path).filter(Boolean);
+      for (let i = 0; i < paths.length; i += 100) {
+        const { error } = await supabase.storage.from("media").remove(paths.slice(i, i + 100));
+        if (error) throw error;
+      }
+
+      const { error: deleteMediaError } = await supabase.from("media").delete().eq("collection_id", id);
+      if (deleteMediaError) throw deleteMediaError;
+      const { error: deleteCollectionError } = await supabase.from("collections").delete().eq("id", id);
+      if (deleteCollectionError) throw deleteCollectionError;
+
+      toast.success("Collection deleted");
+      qc.invalidateQueries({ queryKey: ["collections"] });
+      navigate({ to: "/app" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete collection");
+    }
   };
 
 
@@ -217,6 +252,13 @@ function CollectionPage() {
             </button>
           )}
           {!needsPin && collection && (
+            <CollectionEditDialog
+              collectionId={id}
+              currentTitle={collection.title}
+              currentDescription={collection.description}
+            />
+          )}
+          {!needsPin && collection && (
             <CollectionSettingsDialog
               collectionId={id}
               currentNickname={collection.nickname}
@@ -230,8 +272,26 @@ function CollectionPage() {
             />
           )}
           {!needsPin && <UploadDialog collectionId={id} />}
+          {!needsPin && collection && (
+            <Button
+              variant="destructive"
+              onClick={onDeleteCollection}
+              className="rounded-full"
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" /> Delete collection
+            </Button>
+          )}
         </div>
       </section>
+
+      {!needsPin && collection && (
+        <section className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-border/60 py-4 text-sm text-muted-foreground">
+          <p>{collection.description || "A private space for your favorite frames."}</p>
+          <span className="text-xs uppercase tracking-wider text-primary">
+            Created {new Date(collection.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+          </span>
+        </section>
+      )}
 
       <section className="mt-10">
         {filtered.length === 0 ? (
