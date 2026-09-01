@@ -38,6 +38,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/c/$id")({
+  head: () => ({
+    meta: [
+      { title: "Collection — Lumen private gallery" },
+      {
+        name: "description",
+        content: "View, organize and protect the photos and videos in your private Lumen collection.",
+      },
+      { property: "og:title", content: "Collection — Lumen private gallery" },
+      {
+        property: "og:description",
+        content: "A private collection for viewing, editing and keeping your personal media.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CollectionPage,
 });
 
