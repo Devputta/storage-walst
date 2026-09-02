@@ -1,11 +1,15 @@
-import { useNavigate } from "@tanstack/react-router";
-import { LogOut, UserRound, Moon, Sun } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
+import { BookOpen, Home, LogOut, Moon, Plus, Sun, UserRound } from "lucide-react";
 import { Logo } from "./Logo";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { NewCollectionDialog } from "./NewCollectionDialog";
 import { useEffect, useState, type ReactNode } from "react";
+
+const navItems = [
+  { to: "/app" as const, label: "Home", icon: Home },
+  { to: "/about" as const, label: "About", icon: BookOpen },
+];
 
 export function AppShell({
   children,
@@ -35,79 +39,89 @@ export function AppShell({
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
   };
-  return (
-    <div className="relative min-h-dvh overflow-x-hidden">
-      {/* Background visuals */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 -top-40 h-[26rem] w-[26rem] rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute -right-24 top-1/3 h-[22rem] w-[22rem] rounded-full bg-accent/20 blur-[130px]" />
-        <div className="absolute bottom-[-10rem] left-1/3 h-[24rem] w-[24rem] rounded-full bg-[color-mix(in_oklab,var(--aurora-2)_60%,transparent)] blur-[140px]" />
-        <div
-          className="absolute inset-0 opacity-[0.5]"
-          style={{
-            backgroundImage:
-              "radial-gradient(color-mix(in oklab, var(--foreground) 8%, transparent) 1px, transparent 1px)",
-            backgroundSize: "26px 26px",
-            maskImage: "radial-gradient(ellipse 70% 55% at 50% 0%, black, transparent 75%)",
-          }}
-        />
-      </div>
 
-      <header className="sticky top-0 z-40">
-        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 sm:flex sm:justify-between sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link to="/app"><Logo /></Link>
-            <nav className="hidden items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground sm:flex">
-              <Link
-                to="/app"
-                activeProps={{ className: "text-foreground" }}
-                className="rounded-full px-3 py-1.5 transition hover:text-foreground"
-              >
-                Home
-              </Link>
-              <Link
-                to="/about"
-                activeProps={{ className: "text-foreground" }}
-                className="rounded-full px-3 py-1.5 transition hover:text-foreground"
-              >
-                About
-              </Link>
-            </nav>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {showNewCollection && <NewCollectionDialog variant="icon" />}
-            <Button
-              onClick={toggleTheme}
-              variant="ghost"
-              size="icon"
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              className="glass min-h-10 min-w-10 rounded-full text-primary hover:text-primary"
+  return (
+    <div className="relative min-h-dvh overflow-x-hidden bg-background">
+      <div aria-hidden className="surface-grid pointer-events-none fixed inset-0 -z-10 opacity-60" />
+
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-line/80 bg-background/90 px-5 py-6 backdrop-blur-xl lg:flex">
+        <Link to="/app" className="mb-10 inline-flex w-fit" aria-label="Lumen home">
+          <Logo />
+        </Link>
+        <nav aria-label="Primary navigation" className="space-y-1">
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              activeProps={{ className: "bg-primary/12 text-foreground ring-1 ring-primary/20" }}
+              className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
             >
+              <Icon className="h-4 w-4" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="mt-8 border-t border-line/70 pt-5">
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Your space</p>
+          <div className="mt-3 flex items-center gap-3 rounded-xl bg-muted/50 px-3 py-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 text-accent">
+              <span className="h-2 w-2 rounded-full bg-accent" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Private by default</p>
+              <p className="truncate text-xs text-muted-foreground">Only you can access your gallery</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto space-y-2">
+          {showNewCollection && (
+            <div className="flex items-center gap-2">
+              <NewCollectionDialog variant="icon" />
+              <span className="text-sm text-muted-foreground">New collection</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 border-t border-line/70 pt-4">
+            <Button asChild variant="ghost" className="min-h-11 flex-1 justify-start gap-3 px-3 text-muted-foreground hover:text-foreground">
+              <Link to="/profile"><UserRound className="h-4 w-4" /> Profile</Link>
+            </Button>
+            <Button onClick={toggleTheme} variant="ghost" size="icon" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} title={isDark ? "Switch to light mode" : "Switch to dark mode"} className="min-h-11 min-w-11 text-muted-foreground hover:text-foreground">
               {isDark ? <Sun /> : <Moon />}
             </Button>
-            <Link
-              to="/profile"
-              title="Profile"
-              aria-label="Profile"
-              className="glass flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
-            >
-              <UserRound className="h-4 w-4" />
-            </Link>
-            <Button
-              onClick={signOut}
-              variant="ghost"
-              size="icon"
-              aria-label="Sign out"
-              title="Sign out"
-              className="glass min-h-10 min-w-10 rounded-full text-primary hover:text-primary"
-            >
-              <LogOut className="h-4 w-4" />
+            <Button onClick={signOut} variant="ghost" size="icon" aria-label="Sign out" title="Sign out" className="min-h-11 min-w-11 text-muted-foreground hover:text-foreground">
+              <LogOut />
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      <header className="sticky top-0 z-30 border-b border-line/60 bg-background/85 backdrop-blur-xl lg:hidden">
+        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+          <Link to="/app" aria-label="Lumen home"><Logo /></Link>
+          <div className="flex items-center gap-1">
+            {showNewCollection && <NewCollectionDialog variant="icon" />}
+            <Button onClick={toggleTheme} variant="ghost" size="icon" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} className="min-h-11 min-w-11">
+              {isDark ? <Sun /> : <Moon />}
+            </Button>
+            <Button asChild variant="ghost" size="icon" aria-label="Profile" className="min-h-11 min-w-11">
+              <Link to="/profile"><UserRound /></Link>
             </Button>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-6 pb-24">{children}</main>
+
+      <main className="mx-auto min-w-0 max-w-[1500px] px-4 pb-24 sm:px-6 lg:ml-72 lg:px-10 lg:pb-16">{children}</main>
+
+      <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-background/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-2 gap-2">
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <Link key={to} to={to} activeProps={{ className: "bg-primary/12 text-foreground" }} className="flex min-h-11 items-center justify-center gap-2 rounded-xl text-xs text-muted-foreground transition hover:text-foreground">
+              <Icon className="h-4 w-4" /> {label}
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
