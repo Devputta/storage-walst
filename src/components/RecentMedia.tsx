@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { Play, ImagePlus, X, Images } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedUrl } from "@/lib/storage";
 
@@ -59,17 +60,22 @@ function Viewer({ item, onClose }: { item: RecentItem; onClose: () => void }) {
   const { data: url } = useSignedUrl(item.storage_path);
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.title ?? (item.media_type === "video" ? "Video viewer" : "Photo viewer")}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-media-overlay p-4"
       onClick={onClose}
     >
-      <button
+      <Button
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="glass-strong absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full"
+        variant="ghost"
+        size="icon"
+        className="glass-strong absolute right-4 top-4 min-h-11 min-w-11 rounded-full"
       >
         <X className="h-4 w-4" />
-      </button>
+      </Button>
       <div className="max-h-full w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
         {url &&
           (item.media_type === "video" ? (
@@ -122,7 +128,7 @@ export function RecentMedia() {
     return (
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="aspect-square animate-pulse rounded-2xl bg-white/5" />
+          <div key={i} className="aspect-square animate-pulse rounded-2xl bg-muted/60" />
         ))}
       </div>
     );

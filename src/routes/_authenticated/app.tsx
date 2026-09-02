@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info } from "lucide-react";
+import { Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info, Search, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
@@ -18,6 +18,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({ meta: [{ title: "Your Space — Lumen" }] }),
@@ -81,7 +82,7 @@ function AppPage() {
 
 
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["collections"],
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase
@@ -157,18 +158,19 @@ function AppPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="h-7 min-w-0 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
             />
-            <span aria-hidden className="shrink-0 text-xs text-muted-foreground">⌕</span>
+             <Search aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs transition hover:text-foreground"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
                 View options
                 <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64 rounded-2xl">
               <DropdownMenuLabel>Show in your space</DropdownMenuLabel>
@@ -219,10 +221,16 @@ function AppPage() {
 
       <section>
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+          <div aria-label="Loading collections" className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-[4/5] animate-pulse rounded-3xl bg-white/5" />
+              <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-muted/60" />
             ))}
+          </div>
+        ) : error ? (
+          <div role="alert" className="glass flex flex-col items-center justify-center rounded-2xl px-6 py-16 text-center">
+            <p className="font-display text-2xl">Your collections could not load</p>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">Check your connection and try again. Nothing in your gallery was changed.</p>
+            <Button variant="secondary" className="mt-6 rounded-full" onClick={() => qc.invalidateQueries({ queryKey: ["collections"] })}>Try again</Button>
           </div>
         ) : (
           <motion.div
@@ -247,10 +255,14 @@ function AppPage() {
           </motion.div>
         )}
 
-        {!isLoading && filtered.length === 0 && (
-          <p className="mt-12 text-center text-sm text-muted-foreground">
-            {search ? "No collections match your search." : "Create your first collection above."}
-          </p>
+        {!isLoading && !error && filtered.length === 0 && (
+          <div className="glass mt-8 flex flex-col items-center rounded-2xl px-6 py-16 text-center">
+            <Sparkles className="h-6 w-6 text-primary" />
+            <p className="mt-4 font-display text-2xl">{search ? "No collections found" : "Your gallery starts here"}</p>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              {search ? "Try another search or clear the filter." : "Create a collection to keep your photos and videos together."}
+            </p>
+          </div>
         )}
       </section>
     </AppShell>
