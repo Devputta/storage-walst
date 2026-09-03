@@ -10,6 +10,7 @@ import { useSession } from "@/lib/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({ meta: [{ title: "Sign in — Lumen" }] }),
   component: AuthPage,
 });
