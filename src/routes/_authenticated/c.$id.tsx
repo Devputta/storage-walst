@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
+  ArrowDownAZ,
+  ArrowUpAZ,
+  CalendarArrowDown,
+  CalendarArrowUp,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   Trash2,
   ImageIcon,
@@ -16,6 +22,12 @@ import {
   Check,
   Eye,
   EyeOff,
+  Search,
+  SlidersHorizontal,
+  AlertTriangle,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -27,6 +39,7 @@ import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog"
 import { CollectionEditDialog } from "@/components/CollectionEditDialog";
 import { DownloadCollectionButton } from "@/components/DownloadCollectionButton";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 import { useSignedUrl } from "@/lib/storage";
 
@@ -65,6 +78,7 @@ type Media = {
   media_type: "image" | "video";
   mime_type: string | null;
   is_favorite: boolean;
+  created_at: string;
 };
 
 type Collection = {
@@ -79,6 +93,7 @@ type Collection = {
 };
 
 type ViewMode = "grid" | "list";
+type SortMode = "newest" | "oldest" | "name-asc" | "name-desc";
 
 const PAGE_SIZE = 60;
 
@@ -87,6 +102,8 @@ function CollectionPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | "image" | "video" | "favorite">("all");
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "grid";
     return (localStorage.getItem("lumen.viewMode") as ViewMode) || "grid";
@@ -99,7 +116,7 @@ function CollectionPage() {
     if (typeof window !== "undefined") localStorage.setItem("lumen.viewMode", viewMode);
   }, [viewMode]);
 
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id, search, sortMode]);
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
@@ -121,7 +138,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Media[]> => {
       const { data, error } = await supabase
         .from("media")
-        .select("id,title,description,storage_path,media_type,mime_type,is_favorite")
+        .select("id,title,description,storage_path,media_type,mime_type,is_favorite,created_at")
         .eq("collection_id", id)
         .order("created_at", { ascending: false })
         .range(0, 1049);
@@ -133,10 +150,23 @@ function CollectionPage() {
 
   const filtered = useMemo(() => {
     const list = media ?? [];
-    if (filter === "all") return list;
-    if (filter === "favorite") return list.filter((m) => m.is_favorite);
-    return list.filter((m) => m.media_type === filter);
-  }, [media, filter]);
+    const query = search.trim().toLowerCase();
+    const matching = list.filter((m) => {
+      if (filter === "favorite" && !m.is_favorite) return false;
+      if (filter !== "all" && filter !== "favorite" && m.media_type !== filter) return false;
+      if (!query) return true;
+      return [m.title, m.description].some((value) => value?.toLowerCase().includes(query));
+    });
+
+    return [...matching].sort((a, b) => {
+      if (sortMode === "name-asc" || sortMode === "name-desc") {
+        const result = (a.title || "Untitled").localeCompare(b.title || "Untitled", undefined, { sensitivity: "base" });
+        return sortMode === "name-asc" ? result : -result;
+      }
+      const result = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return sortMode === "newest" ? -result : result;
+    });
+  }, [media, filter, search, sortMode]);
 
   const favCount = useMemo(() => (media ?? []).filter((m) => m.is_favorite).length, [media]);
 
@@ -205,12 +235,14 @@ function CollectionPage() {
       />
 
       <div className="pt-4">
-        <button
+          <Button
+            type="button"
+            variant="ghost"
           onClick={() => navigate({ to: "/app" })}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+            className="-ml-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> All collections
-        </button>
+          </Button>
       </div>
 
       <section className="mt-6 flex flex-wrap items-end justify-between gap-4">
@@ -225,19 +257,58 @@ function CollectionPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="glass flex items-center rounded-full p-1">
             {(["all", "image", "video", "favorite"] as const).map((f) => (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs uppercase tracking-wider transition ${
+                className={`inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs uppercase tracking-wider transition ${
                   filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {f === "all" ? "All" : f === "image" ? "Photos" : f === "video" ? "Videos" : (
                   <><Heart className="h-3 w-3" /> {favCount || ""}</>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
+          <div className="glass flex min-w-0 flex-1 items-center gap-2 rounded-full px-3 sm:max-w-xs">
+            <Search aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <Input
+              aria-label="Search photos and videos"
+              placeholder="Search media"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-9 min-w-0 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            />
+            {search && (
+              <Button type="button" variant="ghost" size="icon" aria-label="Clear search" onClick={() => setSearch("")} className="h-7 w-7 shrink-0 rounded-full">
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="secondary" size="sm" className="rounded-full" aria-label="Sort media">
+                <SlidersHorizontal className="mr-1.5 h-4 w-4 text-primary" />
+                Sort
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass-strong border-white/10">
+              <DropdownMenuItem onClick={() => setSortMode("newest")}>
+                <CalendarArrowDown className="mr-2 h-4 w-4" /> Newest first
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortMode("oldest")}>
+                <CalendarArrowUp className="mr-2 h-4 w-4" /> Oldest first
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortMode("name-asc")}>
+                <ArrowDownAZ className="mr-2 h-4 w-4" /> Name A–Z
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortMode("name-desc")}>
+                <ArrowUpAZ className="mr-2 h-4 w-4" /> Name Z–A
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="glass flex items-center rounded-full p-1" role="tablist" aria-label="View mode">
             <button
               onClick={() => setViewMode("list")}
@@ -312,16 +383,16 @@ function CollectionPage() {
       <section className="mt-10">
         {filtered.length === 0 ? (
           <div className="glass mt-12 rounded-3xl py-24 text-center text-muted-foreground">
-            <p>Empty for now. Upload your first frame.</p>
+            <p>{search ? "No media matches your search." : filter === "favorite" ? "No favorites in this collection yet." : "Empty for now. Upload your first frame."}</p>
           </div>
         ) : viewMode === "grid" ? (
           <>
             <div className="columns-2 gap-4 md:columns-3 lg:columns-4 [&>*]:mb-4">
-              {filtered.slice(0, visibleCount).map((m, i) => (
+              {filtered.slice(0, visibleCount).map((m) => (
                 <MediaTile
                   key={m.id}
                   m={m}
-                  onOpen={() => setLightboxIndex(i)}
+                  onOpen={() => setLightboxIndex(filtered.findIndex((item) => item.id === m.id))}
                   onFavorite={() => onFavorite(m)}
                   onDelete={() => onDelete(m)}
                 />
@@ -329,23 +400,25 @@ function CollectionPage() {
             </div>
             {visibleCount < filtered.length && (
               <div className="mt-6 flex justify-center">
-                <button
+                 <Button
+                   type="button"
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                   variant="secondary"
+                   className="rounded-full"
                 >
                   Load more ({filtered.length - visibleCount} left)
-                </button>
+                 </Button>
               </div>
             )}
           </>
         ) : (
           <>
             <div className="flex flex-col gap-3">
-              {filtered.slice(0, visibleCount).map((m, i) => (
+              {filtered.slice(0, visibleCount).map((m) => (
                 <MediaRow
                   key={m.id}
                   m={m}
-                  onOpen={() => setLightboxIndex(i)}
+                  onOpen={() => setLightboxIndex(filtered.findIndex((item) => item.id === m.id))}
                   onFavorite={() => onFavorite(m)}
                   onDelete={() => onDelete(m)}
                 />
@@ -353,12 +426,14 @@ function CollectionPage() {
             </div>
             {visibleCount < filtered.length && (
               <div className="mt-6 flex justify-center">
-                <button
+                 <Button
+                   type="button"
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                   variant="secondary"
+                   className="rounded-full"
                 >
                   Load more ({filtered.length - visibleCount} left)
-                </button>
+                 </Button>
               </div>
             )}
           </>
