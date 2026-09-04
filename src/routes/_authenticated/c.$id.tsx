@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
+  ArrowDownAZ,
+  ArrowUpAZ,
+  CalendarArrowDown,
+  CalendarArrowUp,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   Trash2,
   ImageIcon,
@@ -16,6 +22,13 @@ import {
   Check,
   Eye,
   EyeOff,
+  Search,
+  SlidersHorizontal,
+  AlertTriangle,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -27,6 +40,7 @@ import { CollectionSettingsDialog } from "@/components/CollectionSettingsDialog"
 import { CollectionEditDialog } from "@/components/CollectionEditDialog";
 import { DownloadCollectionButton } from "@/components/DownloadCollectionButton";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 import { useSignedUrl } from "@/lib/storage";
 
@@ -65,6 +79,7 @@ type Media = {
   media_type: "image" | "video";
   mime_type: string | null;
   is_favorite: boolean;
+  created_at: string;
 };
 
 type Collection = {
@@ -79,6 +94,7 @@ type Collection = {
 };
 
 type ViewMode = "grid" | "list";
+type SortMode = "newest" | "oldest" | "name-asc" | "name-desc";
 
 const PAGE_SIZE = 60;
 
@@ -87,6 +103,8 @@ function CollectionPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | "image" | "video" | "favorite">("all");
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "grid";
     return (localStorage.getItem("lumen.viewMode") as ViewMode) || "grid";
@@ -99,7 +117,7 @@ function CollectionPage() {
     if (typeof window !== "undefined") localStorage.setItem("lumen.viewMode", viewMode);
   }, [viewMode]);
 
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id, search, sortMode]);
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
@@ -121,7 +139,7 @@ function CollectionPage() {
     queryFn: async (): Promise<Media[]> => {
       const { data, error } = await supabase
         .from("media")
-        .select("id,title,description,storage_path,media_type,mime_type,is_favorite")
+        .select("id,title,description,storage_path,media_type,mime_type,is_favorite,created_at")
         .eq("collection_id", id)
         .order("created_at", { ascending: false })
         .range(0, 1049);
@@ -133,10 +151,23 @@ function CollectionPage() {
 
   const filtered = useMemo(() => {
     const list = media ?? [];
-    if (filter === "all") return list;
-    if (filter === "favorite") return list.filter((m) => m.is_favorite);
-    return list.filter((m) => m.media_type === filter);
-  }, [media, filter]);
+    const query = search.trim().toLowerCase();
+    const matching = list.filter((m) => {
+      if (filter === "favorite" && !m.is_favorite) return false;
+      if (filter !== "all" && filter !== "favorite" && m.media_type !== filter) return false;
+      if (!query) return true;
+      return [m.title, m.description].some((value) => value?.toLowerCase().includes(query));
+    });
+
+    return [...matching].sort((a, b) => {
+      if (sortMode === "name-asc" || sortMode === "name-desc") {
+        const result = (a.title || "Untitled").localeCompare(b.title || "Untitled", undefined, { sensitivity: "base" });
+        return sortMode === "name-asc" ? result : -result;
+      }
+      const result = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return sortMode === "newest" ? -result : result;
+    });
+  }, [media, filter, search, sortMode]);
 
   const favCount = useMemo(() => (media ?? []).filter((m) => m.is_favorite).length, [media]);
 
@@ -205,12 +236,14 @@ function CollectionPage() {
       />
 
       <div className="pt-4">
-        <button
+          <Button
+            type="button"
+            variant="ghost"
           onClick={() => navigate({ to: "/app" })}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+            className="-ml-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> All collections
-        </button>
+          </Button>
       </div>
 
       <section className="mt-6 flex flex-wrap items-end justify-between gap-4">
@@ -225,19 +258,58 @@ function CollectionPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="glass flex items-center rounded-full p-1">
             {(["all", "image", "video", "favorite"] as const).map((f) => (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs uppercase tracking-wider transition ${
+                className={`inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs uppercase tracking-wider transition ${
                   filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {f === "all" ? "All" : f === "image" ? "Photos" : f === "video" ? "Videos" : (
                   <><Heart className="h-3 w-3" /> {favCount || ""}</>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
+          <div className="glass flex min-w-0 flex-1 items-center gap-2 rounded-full px-3 sm:max-w-xs">
+            <Search aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <Input
+              aria-label="Search photos and videos"
+              placeholder="Search media"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-9 min-w-0 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            />
+            {search && (
+              <Button type="button" variant="ghost" size="icon" aria-label="Clear search" onClick={() => setSearch("")} className="h-7 w-7 shrink-0 rounded-full">
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="secondary" size="sm" className="rounded-full" aria-label="Sort media">
+                <SlidersHorizontal className="mr-1.5 h-4 w-4 text-primary" />
+                Sort
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass-strong border-white/10">
+              <DropdownMenuItem onClick={() => setSortMode("newest")}>
+                <CalendarArrowDown className="mr-2 h-4 w-4" /> Newest first
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortMode("oldest")}>
+                <CalendarArrowUp className="mr-2 h-4 w-4" /> Oldest first
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortMode("name-asc")}>
+                <ArrowDownAZ className="mr-2 h-4 w-4" /> Name A–Z
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortMode("name-desc")}>
+                <ArrowUpAZ className="mr-2 h-4 w-4" /> Name Z–A
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="glass flex items-center rounded-full p-1" role="tablist" aria-label="View mode">
             <button
               onClick={() => setViewMode("list")}
@@ -312,16 +384,16 @@ function CollectionPage() {
       <section className="mt-10">
         {filtered.length === 0 ? (
           <div className="glass mt-12 rounded-3xl py-24 text-center text-muted-foreground">
-            <p>Empty for now. Upload your first frame.</p>
+            <p>{search ? "No media matches your search." : filter === "favorite" ? "No favorites in this collection yet." : "Empty for now. Upload your first frame."}</p>
           </div>
         ) : viewMode === "grid" ? (
           <>
             <div className="columns-2 gap-4 md:columns-3 lg:columns-4 [&>*]:mb-4">
-              {filtered.slice(0, visibleCount).map((m, i) => (
+              {filtered.slice(0, visibleCount).map((m) => (
                 <MediaTile
                   key={m.id}
                   m={m}
-                  onOpen={() => setLightboxIndex(i)}
+                  onOpen={() => setLightboxIndex(filtered.findIndex((item) => item.id === m.id))}
                   onFavorite={() => onFavorite(m)}
                   onDelete={() => onDelete(m)}
                 />
@@ -329,23 +401,25 @@ function CollectionPage() {
             </div>
             {visibleCount < filtered.length && (
               <div className="mt-6 flex justify-center">
-                <button
+                 <Button
+                   type="button"
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                   variant="secondary"
+                   className="rounded-full"
                 >
                   Load more ({filtered.length - visibleCount} left)
-                </button>
+                 </Button>
               </div>
             )}
           </>
         ) : (
           <>
             <div className="flex flex-col gap-3">
-              {filtered.slice(0, visibleCount).map((m, i) => (
+              {filtered.slice(0, visibleCount).map((m) => (
                 <MediaRow
                   key={m.id}
                   m={m}
-                  onOpen={() => setLightboxIndex(i)}
+                  onOpen={() => setLightboxIndex(filtered.findIndex((item) => item.id === m.id))}
                   onFavorite={() => onFavorite(m)}
                   onDelete={() => onDelete(m)}
                 />
@@ -353,12 +427,14 @@ function CollectionPage() {
             </div>
             {visibleCount < filtered.length && (
               <div className="mt-6 flex justify-center">
-                <button
+                 <Button
+                   type="button"
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                  className="glass rounded-full px-5 py-2 text-sm hover:bg-white/5"
+                   variant="secondary"
+                   className="rounded-full"
                 >
                   Load more ({filtered.length - visibleCount} left)
-                </button>
+                 </Button>
               </div>
             )}
           </>
@@ -393,18 +469,52 @@ function MediaTile({
   onFavorite: () => void;
   onDelete: () => void;
 }) {
-  const { data: url } = useSignedUrl(m.storage_path);
+  const tileRef = useRef<HTMLDivElement>(null);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const { data: url, isError } = useSignedUrl(m.storage_path, isNearViewport);
+  const [failed, setFailed] = useState(false);
+  const unavailable = failed || isError;
+
+  useEffect(() => {
+    const node = tileRef.current;
+    if (!node || isNearViewport) return;
+    if (!("IntersectionObserver" in window)) {
+      setIsNearViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setIsNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isNearViewport]);
+
+  useEffect(() => setFailed(false), [url]);
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.01 }}
+      ref={tileRef}
       className="group relative break-inside-avoid overflow-hidden rounded-2xl ring-1 ring-white/5"
     >
       <button onClick={onOpen} className="block w-full">
-        {url ? (
+        {url && !unavailable ? (
           m.media_type === "image" ? (
-            <img src={url} alt={m.title ?? ""} className="w-full" loading="lazy" />
+            <img
+              src={url}
+              alt={m.title ?? "Photo"}
+              className="w-full"
+              loading="lazy"
+              onError={() => setFailed(true)}
+            />
           ) : (
             <div className="relative w-full bg-black">
               <video
@@ -413,6 +523,7 @@ function MediaTile({
                 muted
                 playsInline
                 preload="metadata"
+                onError={() => setFailed(true)}
               />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 backdrop-blur">
@@ -421,8 +532,10 @@ function MediaTile({
               </div>
             </div>
           )
+        ) : unavailable ? (
+          <MediaUnavailable compact />
         ) : (
-          <div className="aspect-[3/4] w-full animate-pulse bg-white/5" />
+          <div className="aspect-[3/4] w-full animate-pulse bg-muted/50" />
         )}
       </button>
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 transition md:opacity-0 md:group-hover:opacity-100" />
@@ -470,19 +583,59 @@ function MediaRow({
   onFavorite: () => void;
   onDelete: () => void;
 }) {
-  const { data: url } = useSignedUrl(m.storage_path);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const { data: url, isError } = useSignedUrl(m.storage_path, isNearViewport);
+  const [failed, setFailed] = useState(false);
+  const unavailable = failed || isError;
+
+  useEffect(() => {
+    const node = rowRef.current;
+    if (!node || isNearViewport) return;
+    if (!("IntersectionObserver" in window)) {
+      setIsNearViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setIsNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isNearViewport]);
+
+  useEffect(() => setFailed(false), [url]);
+
   return (
-    <div className="glass flex items-center gap-3 rounded-2xl p-2 ring-1 ring-white/5">
+    <div ref={rowRef} className="glass flex items-center gap-3 rounded-2xl p-2 ring-1 ring-white/5">
       <button
         onClick={onOpen}
         className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-black"
       >
-        {url ? (
+        {url && !unavailable ? (
           m.media_type === "image" ? (
-            <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+            <img
+              src={url}
+              alt={m.title ?? "Photo"}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              onError={() => setFailed(true)}
+            />
           ) : (
             <div className="relative h-full w-full">
-              <video src={`${url}#t=0.5`} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+              <video
+                src={`${url}#t=0.5`}
+                className="h-full w-full object-cover"
+                muted
+                playsInline
+                preload="metadata"
+                onError={() => setFailed(true)}
+              />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/55">
                   <Video className="h-4 w-4 text-white" />
@@ -490,8 +643,10 @@ function MediaRow({
               </div>
             </div>
           )
+        ) : unavailable ? (
+          <MediaUnavailable compact />
         ) : (
-          <div className="h-full w-full animate-pulse bg-white/5" />
+          <div className="h-full w-full animate-pulse bg-muted/50" />
         )}
       </button>
       <button onClick={onOpen} className="min-w-0 flex-1 text-left">
@@ -543,6 +698,7 @@ function ReelLightbox({
 }) {
   const lockRef = useRef(false);
   const touchStartRef = useRef<number | null>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
 
   const goTo = useCallback((nextIndex: number) => {
     if (lockRef.current) return;
@@ -558,8 +714,8 @@ function ReelLightbox({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowDown") goTo(index + 1);
-      if (e.key === "ArrowUp") goTo(index - 1);
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") goTo(index + 1);
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") goTo(index - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -567,6 +723,11 @@ function ReelLightbox({
 
   return (
     <motion.div
+      ref={viewerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Media viewer, item ${index + 1} of ${items.length}`}
+      tabIndex={-1}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -579,6 +740,44 @@ function ReelLightbox({
       >
         <X className="h-4 w-4" />
       </button>
+
+      <div className="absolute left-4 top-4 z-20 hidden items-center gap-2 sm:flex">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Previous media"
+          title="Previous"
+          onClick={() => goTo(index - 1)}
+          disabled={index === 0}
+          className="glass-strong h-10 w-10 rounded-full text-overlay-foreground disabled:opacity-35"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Next media"
+          title="Next"
+          onClick={() => goTo(index + 1)}
+          disabled={index === items.length - 1}
+          className="glass-strong h-10 w-10 rounded-full text-overlay-foreground disabled:opacity-35"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Enter fullscreen"
+          title="Fullscreen"
+          onClick={() => viewerRef.current?.requestFullscreen?.()}
+          className="glass-strong h-10 w-10 rounded-full text-overlay-foreground"
+        >
+          <Maximize2 className="h-4 w-4" />
+        </Button>
+      </div>
 
       <div
         className="h-[100dvh] w-full overflow-hidden overscroll-contain"
@@ -644,9 +843,13 @@ function ReelSlide({
   onDelete: () => void;
   onMetaUpdated: () => void;
 }) {
-  const { data: url } = useSignedUrl(m.storage_path);
+  const { data: url, isError } = useSignedUrl(m.storage_path);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [scale, setScale] = useState(1);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchStartRef = useRef<{ distance: number; scale: number } | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(m.title ?? "");
@@ -656,7 +859,13 @@ function ReelSlide({
   useEffect(() => {
     setTitle(m.title ?? "");
     setDesc(m.description ?? "");
+    setFailed(false);
+    setScale(1);
   }, [m.id, m.title, m.description]);
+
+  useEffect(() => {
+    if (!active) setScale(1);
+  }, [active]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -690,12 +899,69 @@ function ReelSlide({
     onMetaUpdated();
   };
 
+  const clampScale = (value: number) => Math.min(4, Math.max(1, value));
+  const adjustScale = (amount: number) => setScale((value) => clampScale(value + amount));
+  const resetScale = () => setScale(1);
+  const pointerDistance = () => {
+    const points = Array.from(pointersRef.current.values());
+    const first = points[0];
+    const second = points[1];
+    if (!first || !second) return null;
+    return Math.hypot(first.x - second.x, first.y - second.y);
+  };
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const distance = pointerDistance();
+    if (distance) pinchStartRef.current = { distance, scale };
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointersRef.current.has(event.pointerId)) return;
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const distance = pointerDistance();
+    const pinchStart = pinchStartRef.current;
+    if (distance && pinchStart) {
+      setScale(clampScale(pinchStart.scale * (distance / pinchStart.distance)));
+    }
+  };
+
+  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    if (pointersRef.current.size < 2) pinchStartRef.current = null;
+  };
+
+  const unavailable = failed || isError;
+
   return (
     <>
-      <div className="absolute inset-0 flex h-full w-full items-center justify-center" onClick={(e) => e.stopPropagation()}>
-        {url ? (
+      <div
+        className="absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        onWheel={(event) => {
+          if (m.media_type === "image") {
+            event.stopPropagation();
+            adjustScale(event.deltaY < 0 ? 0.2 : -0.2);
+          }
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        style={{ touchAction: m.media_type === "image" ? "none" : "auto" }}
+      >
+        {url && !unavailable ? (
           m.media_type === "image" ? (
-            <img src={url} alt={m.title ?? ""} className="h-full w-full object-contain" />
+            <img
+              src={url}
+              alt={m.title ?? "Photo"}
+              className="h-full w-full object-contain transition-transform duration-150"
+              loading="eager"
+              draggable={false}
+              onError={() => setFailed(true)}
+              style={{ transform: `scale(${scale})` }}
+            />
           ) : (
             <video
               ref={videoRef}
@@ -706,13 +972,29 @@ function ReelSlide({
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
+              onError={() => setFailed(true)}
               className="h-full w-full object-contain"
             />
           )
         ) : (
-          <div className="h-3/4 w-3/4 animate-pulse rounded-2xl bg-white/5" />
+          <MediaUnavailable />
         )}
       </div>
+
+      {m.media_type === "image" && url && !unavailable && (
+        <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 rounded-full glass-strong p-1" onClick={(e) => e.stopPropagation()}>
+          <Button type="button" variant="ghost" size="icon" aria-label="Zoom out" title="Zoom out" onClick={() => adjustScale(-0.25)} disabled={scale <= 1} className="h-9 w-9 rounded-full text-overlay-foreground disabled:opacity-40">
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="min-w-12 text-center text-xs text-overlay-foreground">{Math.round(scale * 100)}%</span>
+          <Button type="button" variant="ghost" size="icon" aria-label="Zoom in" title="Zoom in" onClick={() => adjustScale(0.25)} disabled={scale >= 4} className="h-9 w-9 rounded-full text-overlay-foreground disabled:opacity-40">
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" aria-label="Reset zoom" title="Reset zoom" onClick={resetScale} disabled={scale === 1} className="h-9 w-9 rounded-full text-overlay-foreground disabled:opacity-40">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Right-side action rail (reel-style) */}
       <div className="absolute right-3 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-3" onClick={(e) => e.stopPropagation()}>
@@ -784,6 +1066,15 @@ function ReelSlide({
 
       </div>
     </>
+  );
+}
+
+function MediaUnavailable({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={`flex w-full flex-col items-center justify-center gap-2 bg-muted/60 text-center text-muted-foreground ${compact ? "aspect-[3/4] min-h-20 p-3" : "h-3/4 max-h-[28rem] min-h-48 max-w-2xl rounded-2xl p-8"}`}>
+      <AlertTriangle className={compact ? "h-4 w-4" : "h-7 w-7"} />
+      <span className={compact ? "text-[10px]" : "text-sm"}>Media unavailable</span>
+    </div>
   );
 }
 
