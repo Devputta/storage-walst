@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
  * Falls back to the value as-is if it already looks like an http(s) URL
  * (legacy rows that stored full signed URLs).
  */
-export function useSignedUrl(path: string | null | undefined) {
+export function useSignedUrl(path: string | null | undefined, enabled = true) {
   return useQuery({
     queryKey: ["sign", path],
     queryFn: async () => {
@@ -18,7 +18,7 @@ export function useSignedUrl(path: string | null | undefined) {
       if (error) throw error;
       return data.signedUrl;
     },
-    enabled: !!path,
+    enabled: !!path && enabled,
     staleTime: 1000 * 60 * 50,
   });
 }

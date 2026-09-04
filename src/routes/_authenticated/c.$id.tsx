@@ -469,9 +469,31 @@ function MediaTile({
   onFavorite: () => void;
   onDelete: () => void;
 }) {
-  const { data: url, isError } = useSignedUrl(m.storage_path);
+  const tileRef = useRef<HTMLDivElement>(null);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const { data: url, isError } = useSignedUrl(m.storage_path, isNearViewport);
   const [failed, setFailed] = useState(false);
   const unavailable = failed || isError;
+
+  useEffect(() => {
+    const node = tileRef.current;
+    if (!node || isNearViewport) return;
+    if (!("IntersectionObserver" in window)) {
+      setIsNearViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setIsNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isNearViewport]);
 
   useEffect(() => setFailed(false), [url]);
 
@@ -480,6 +502,7 @@ function MediaTile({
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.01 }}
+      ref={tileRef}
       className="group relative break-inside-avoid overflow-hidden rounded-2xl ring-1 ring-white/5"
     >
       <button onClick={onOpen} className="block w-full">
@@ -560,14 +583,36 @@ function MediaRow({
   onFavorite: () => void;
   onDelete: () => void;
 }) {
-  const { data: url, isError } = useSignedUrl(m.storage_path);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const { data: url, isError } = useSignedUrl(m.storage_path, isNearViewport);
   const [failed, setFailed] = useState(false);
   const unavailable = failed || isError;
+
+  useEffect(() => {
+    const node = rowRef.current;
+    if (!node || isNearViewport) return;
+    if (!("IntersectionObserver" in window)) {
+      setIsNearViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setIsNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isNearViewport]);
 
   useEffect(() => setFailed(false), [url]);
 
   return (
-    <div className="glass flex items-center gap-3 rounded-2xl p-2 ring-1 ring-white/5">
+    <div ref={rowRef} className="glass flex items-center gap-3 rounded-2xl p-2 ring-1 ring-white/5">
       <button
         onClick={onOpen}
         className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-black"
@@ -895,7 +940,10 @@ function ReelSlide({
         className="absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onWheel={(event) => {
-          if (m.media_type === "image") adjustScale(event.deltaY < 0 ? 0.2 : -0.2);
+          if (m.media_type === "image") {
+            event.stopPropagation();
+            adjustScale(event.deltaY < 0 ? 0.2 : -0.2);
+          }
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
