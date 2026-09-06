@@ -63,8 +63,6 @@ export function PinDialog({
       }
     } catch {
       setError("We couldn't verify the PIN. Check your connection and try again.");
-    } catch {
-      setError("We couldn't load recovery for this collection. Try again.");
     } finally {
       setBusy(false);
     }
