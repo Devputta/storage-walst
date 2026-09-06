@@ -79,6 +79,8 @@ export function PinDialog({
       }
       setQuestion(r.question);
       setStep("recover");
+    } catch {
+      setError("We couldn't load recovery for this collection. Try again.");
     } finally {
       setBusy(false);
     }
