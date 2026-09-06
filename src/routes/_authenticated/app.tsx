@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info, Search, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
@@ -35,12 +35,26 @@ type Row = {
   has_pin: boolean;
 };
 
+type RecentCollection = { id: string; visitedAt: number };
+
+const RECENT_KEY = "lumen.recentCollections";
+
 function AppPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [showHidden, setShowHidden] = useState(false);
   const [showLocked, setShowLocked] = useState(false);
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
+  const [recentIds, setRecentIds] = useState<RecentCollection[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as RecentCollection[];
+      setRecentIds(Array.isArray(saved) ? saved.filter((item) => typeof item?.id === "string") : []);
+    } catch {
+      setRecentIds([]);
+    }
+  }, []);
 
   const deleteCollection = async (cid: string, title: string) => {
     if (!confirm(`Delete "${title}" and all its photos & videos? This cannot be undone.`)) return;
@@ -117,7 +131,10 @@ function AppPage() {
     return list.filter((c) => {
       if (c.is_invisible && !showHidden) return false;
       if (c.is_private && !showLocked) return false;
-      if (search && !c.title.toLowerCase().includes(search.toLowerCase())) return false;
+       if (search) {
+         const query = search.toLowerCase();
+         if (!c.title.toLowerCase().includes(query) && !(c.nickname ?? "").toLowerCase().includes(query)) return false;
+       }
       return true;
     });
   }, [data, search, showHidden, showLocked]);
@@ -131,6 +148,14 @@ function AppPage() {
     () => (data ?? []).filter((c) => c.is_private).length,
     [data],
   );
+
+  const recent = useMemo(() => {
+    const byId = new Map((data ?? []).map((item) => [item.id, item]));
+    return recentIds
+      .map((item) => ({ collection: byId.get(item.id), visitedAt: item.visitedAt }))
+      .filter((item): item is { collection: Row; visitedAt: number } => !!item.collection)
+      .slice(0, 4);
+  }, [data, recentIds]);
 
   return (
     <AppShell showNewCollection>
@@ -215,6 +240,37 @@ function AppPage() {
       <section className="pb-10">
         <RecentMedia />
       </section>
+
+      {recent.length > 0 && (
+        <section className="pb-10" aria-labelledby="recent-collections-heading">
+          <div className="mb-3 flex items-center justify-between">
+            <p id="recent-collections-heading" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Recently viewed</p>
+            <span className="text-xs text-muted-foreground">Your last opened spaces</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {recent.map(({ collection: c }) => {
+              const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
+              return (
+                <Link
+                  key={c.id}
+                  to="/c/$id"
+                  params={{ id: c.id }}
+                  className="glass group flex min-w-0 items-center justify-between gap-3 rounded-2xl px-4 py-3 transition hover:ring-1 hover:ring-primary/30"
+                >
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-primary" /> : <Eye className="h-3.5 w-3.5 shrink-0 text-accent" />}
+                      <span className="truncate">{locked && c.nickname ? c.nickname : c.title}</span>
+                    </span>
+                    <span className="mt-1 block text-[11px] text-muted-foreground">{locked ? "PIN protected" : "Ready to open"}</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
 
 

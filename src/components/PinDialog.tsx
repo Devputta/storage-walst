@@ -46,6 +46,10 @@ export function PinDialog({
 
   const submitPin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pin.trim().length < 4) {
+      setError("Use at least 4 characters for your PIN.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await unlockFn({ data: { collectionId, pin } });
@@ -55,10 +59,12 @@ export function PinDialog({
         qc.invalidateQueries({ queryKey: ["media", collectionId] });
         onUnlock();
       } else {
-        setError("Incorrect PIN");
+        setError("That PIN does not match this collection.");
       }
     } catch {
-      setError("Unable to verify PIN");
+      setError("We couldn't verify the PIN. Check your connection and try again.");
+    } catch {
+      setError("We couldn't load recovery for this collection. Try again.");
     } finally {
       setBusy(false);
     }
@@ -82,6 +88,10 @@ export function PinDialog({
 
   const submitRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newPin.trim().length < 4) {
+      setError("Use at least 4 characters for the new PIN.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await recoverFn({ data: { collectionId, answer, newPin } });
@@ -92,11 +102,13 @@ export function PinDialog({
           qc.invalidateQueries({ queryKey: ["collections"] });
           onUnlock();
         } else {
-          setError("PIN reset but couldn't unlock");
+          setError("PIN reset, but the collection could not be unlocked. Try the new PIN again.");
         }
       } else {
-        setError("Wrong answer");
+        setError("That answer does not match the recovery question.");
       }
+    } catch {
+      setError("We couldn't reset the PIN. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -127,7 +139,7 @@ export function PinDialog({
             <Input
               autoFocus
               type="password"
-              placeholder="Enter PIN"
+              placeholder="Enter PIN (4+ characters)"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               className="h-11 rounded-xl bg-input/40 text-center text-lg tracking-[0.5em]"
@@ -157,7 +169,7 @@ export function PinDialog({
             />
             <Input
               type="password"
-              placeholder="Choose a new PIN"
+              placeholder="Choose a new PIN (4+ characters)"
               value={newPin}
               onChange={(e) => setNewPin(e.target.value)}
               className="h-11 rounded-xl bg-input/40 text-center tracking-[0.4em]"

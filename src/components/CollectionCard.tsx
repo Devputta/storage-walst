@@ -24,7 +24,7 @@ export function CollectionCard({
   onDelete?: () => void;
   onUnhide?: () => void;
 }) {
-  const { data: coverUrl } = useSignedUrl(c.cover_url);
+  const { data: coverUrl } = useSignedUrl(c.cover_url, !locked);
   const displayTitle = locked && c.nickname ? c.nickname : c.title;
   return (
     <motion.div
@@ -38,7 +38,7 @@ export function CollectionCard({
         aria-label={displayTitle}
         className="group relative block aspect-[4/5] overflow-hidden rounded-3xl ring-1 ring-white/10"
       >
-        {coverUrl ? (
+         {coverUrl && !locked ? (
           <img
             src={coverUrl}
             alt={c.title}
@@ -46,7 +46,7 @@ export function CollectionCard({
               locked ? "blur-2xl scale-110" : ""
             }`}
           />
-        ) : (
+         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-secondary via-card to-background" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
