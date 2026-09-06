@@ -126,17 +126,6 @@ function CollectionPage() {
 
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id, search, sortMode]);
 
-  useEffect(() => {
-    if (!collection) return;
-    try {
-      const existing = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as Array<{ id: string; visitedAt: number }>;
-      const next = [{ id: collection.id, visitedAt: Date.now() }, ...existing.filter((item) => item.id !== collection.id)].slice(0, 8);
-      window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-    } catch {
-      // Recent history is a convenience; private media never depends on it.
-    }
-  }, [collection]);
-
   const lockCollection = useCallback(async (showMessage = true) => {
     if (!unlocked) return;
     const result = await revokeUnlock({ data: { collectionId: id } });
@@ -180,6 +169,17 @@ function CollectionPage() {
       return data as Collection | null;
     },
   });
+
+  useEffect(() => {
+    if (!collection) return;
+    try {
+      const existing = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as Array<{ id: string; visitedAt: number }>;
+      const next = [{ id: collection.id, visitedAt: Date.now() }, ...existing.filter((item) => item.id !== collection.id)].slice(0, 8);
+      window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    } catch {
+      // Recent history is a convenience; private media never depends on it.
+    }
+  }, [collection]);
 
   const needsPin = !!(collection?.is_private && collection?.has_pin && !unlocked);
 
