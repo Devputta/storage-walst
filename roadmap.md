@@ -5,7 +5,7 @@
 - [x] Day 2: Improve fullscreen viewer navigation, swipe, zoom, and video playback
 - [x] Day 2: Validate responsive rendering and build health
 
-- [ ] Day 3: Harden locked collection and storage access
-- [ ] Day 3: Improve collection search, filters, states, and recently viewed
-- [ ] Day 3: Add PIN feedback, explicit lock, and inactivity auto-lock
-- [ ] Day 3: Validate security policies, responsive UI, and build health
+- [x] Day 3: Harden locked collection and storage access
+- [x] Day 3: Improve collection search, filters, states, and recently viewed
+- [x] Day 3: Add PIN feedback, explicit lock, and inactivity auto-lock
+- [x] Day 3: Validate security policies, responsive UI, and build health

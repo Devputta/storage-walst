@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -29,6 +30,8 @@ import {
   ZoomOut,
   RotateCcw,
   Maximize2,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -43,6 +46,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 
 import { useSignedUrl } from "@/lib/storage";
+import { revokeCollectionUnlock } from "@/lib/collections.functions";
 
 import {
   DropdownMenu,
@@ -97,6 +101,8 @@ type ViewMode = "grid" | "list";
 type SortMode = "newest" | "oldest" | "name-asc" | "name-desc";
 
 const PAGE_SIZE = 60;
+const IDLE_LOCK_MS = 15 * 60 * 1000;
+const RECENT_KEY = "lumen.recentCollections";
 
 function CollectionPage() {
   const { id } = Route.useParams();
@@ -112,12 +118,44 @@ function CollectionPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const revokeUnlock = useServerFn(revokeCollectionUnlock);
 
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("lumen.viewMode", viewMode);
   }, [viewMode]);
 
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, id, search, sortMode]);
+
+  const lockCollection = useCallback(async (showMessage = true) => {
+    if (!unlocked) return;
+    const result = await revokeUnlock({ data: { collectionId: id } });
+    if (!result.ok) {
+      toast.error("The collection could not be locked. Try again.");
+      return;
+    }
+    setUnlocked(false);
+    setLightboxIndex(null);
+    qc.removeQueries({ queryKey: ["media", id] });
+    if (showMessage) toast.success("Collection locked");
+  }, [id, qc, revokeUnlock, unlocked]);
+
+  useEffect(() => {
+    if (!unlocked) return;
+    let timer: number | undefined;
+    const resetTimer = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        void lockCollection(false).then(() => toast.info("This collection was locked after inactivity."));
+      }, IDLE_LOCK_MS);
+    };
+    const events = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+    events.forEach((event) => window.addEventListener(event, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      events.forEach((event) => window.removeEventListener(event, resetTimer));
+    };
+  }, [lockCollection, unlocked]);
 
   const { data: collection } = useQuery({
     queryKey: ["collection", id],
@@ -131,6 +169,17 @@ function CollectionPage() {
       return data as Collection | null;
     },
   });
+
+  useEffect(() => {
+    if (!collection) return;
+    try {
+      const existing = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as Array<{ id: string; visitedAt: number }>;
+      const next = [{ id: collection.id, visitedAt: Date.now() }, ...existing.filter((item) => item.id !== collection.id)].slice(0, 8);
+      window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    } catch {
+      // Recent history is a convenience; private media never depends on it.
+    }
+  }, [collection]);
 
   const needsPin = !!(collection?.is_private && collection?.has_pin && !unlocked);
 
@@ -372,12 +421,21 @@ function CollectionPage() {
         </div>
       </section>
 
-      {!needsPin && collection && (
+       {!needsPin && collection && (
         <section className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-border/60 py-4 text-sm text-muted-foreground">
-          <p>{collection.description || "A private space for your favorite frames."}</p>
+          <p className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-accent" />
+            {collection.description || "A private space for your favorite frames."}
+          </p>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">{media?.length ?? 0} items</span>
           <span className="text-xs uppercase tracking-wider text-primary">
             Created {new Date(collection.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
           </span>
+          {collection.has_pin && (
+            <Button type="button" variant="ghost" onClick={() => void lockCollection()} className="ml-auto h-8 rounded-full px-3 text-xs">
+              <Lock className="mr-1.5 h-3.5 w-3.5" /> Lock now
+            </Button>
+          )}
         </section>
       )}
 

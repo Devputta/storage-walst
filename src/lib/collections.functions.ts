@@ -55,6 +55,21 @@ export const unlockCollection = createServerFn({ method: "POST" })
     return { ok: true as const, expiresAt };
   });
 
+export const revokeCollectionUnlock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ collectionId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("collection_unlocks")
+      .delete()
+      .eq("user_id", context.userId)
+      .eq("collection_id", data.collectionId);
+    return { ok: !error } as const;
+  });
+
 export const getRecoveryQuestion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
