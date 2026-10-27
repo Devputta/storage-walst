@@ -23,7 +23,7 @@ export function AppShell({
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("lumen-theme");
-    const shouldUseDark = savedTheme !== "light";
+    const shouldUseDark = savedTheme === "dark";
     setIsDark(shouldUseDark);
     document.documentElement.classList.toggle("dark", shouldUseDark);
   }, []);
