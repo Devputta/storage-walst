@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Heart, Lock, SlidersHorizontal, ChevronDown, Info, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
@@ -13,8 +13,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuLabel,
-  DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -93,9 +93,6 @@ function AppPage() {
     qc.invalidateQueries({ queryKey: ["collections"] });
   };
 
-
-
-
   const { data, isLoading, error } = useQuery({
     queryKey: ["collections"],
     queryFn: async (): Promise<Row[]> => {
@@ -131,10 +128,10 @@ function AppPage() {
     return list.filter((c) => {
       if (c.is_invisible && !showHidden) return false;
       if (c.is_private && !showLocked) return false;
-       if (search) {
-         const query = search.toLowerCase();
-         if (!c.title.toLowerCase().includes(query) && !(c.nickname ?? "").toLowerCase().includes(query)) return false;
-       }
+      if (search) {
+        const query = search.toLowerCase();
+        if (!c.title.toLowerCase().includes(query) && !(c.nickname ?? "").toLowerCase().includes(query)) return false;
+      }
       return true;
     });
   }, [data, search, showHidden, showLocked]);
@@ -159,46 +156,52 @@ function AppPage() {
 
   return (
     <AppShell showNewCollection>
-      <section className="pt-8 pb-8">
+      {/* Archive masthead — asymmetric, typographic, no hero card */}
+      <header className="border-b border-line pb-10 pt-10">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.45 }}
+          className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between"
         >
-          <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">Your Space</p>
-          <h1 className="mt-3 font-display text-5xl md:text-6xl">
-            Welcome <span className="text-gradient">back</span>.
-          </h1>
-          <p className="mt-3 max-w-lg text-muted-foreground">
-            A cinematic home for every photograph and frame.
+          <div className="max-w-2xl">
+            <p className="font-mono text-[11px] uppercase tracking-[0.32em] text-primary">
+              Private archive
+            </p>
+            <h1 className="mt-4 font-display text-4xl leading-[1.08] md:text-6xl">
+              Your archive, kept in order.
+            </h1>
+          </div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground md:pb-2 md:text-right">
+            {data?.length ?? 0} collections · {lockedCount} locked · {hiddenCount} hidden
           </p>
         </motion.div>
 
-        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex">
-          <div className="glass flex min-w-0 h-10 items-center gap-2 rounded-full px-4 sm:w-64">
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="flex h-10 min-w-0 items-center gap-2 rounded-lg border border-input px-3 sm:w-72">
+            <Search aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
             <Input
               aria-label="Search collections"
-              placeholder="Search collections"
+              placeholder="Search the index"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-7 min-w-0 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+              className="h-8 min-w-0 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
             />
-             <Search aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 type="button"
                 variant="secondary"
-                className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs transition hover:text-foreground"
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-input px-4 text-xs uppercase tracking-[0.14em] text-muted-foreground transition hover:text-foreground"
               >
-                <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
-                View options
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                View
                 <ChevronDown className="h-3.5 w-3.5 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64 rounded-2xl">
-              <DropdownMenuLabel>Show in your space</DropdownMenuLabel>
+            <DropdownMenuContent align="start" className="w-64 rounded-lg">
+              <DropdownMenuLabel className="font-mono text-[10px] uppercase tracking-[0.2em]">Show in your space</DropdownMenuLabel>
               <DropdownMenuCheckboxItem
                 checked={showLocked}
                 onCheckedChange={(v) => setShowLocked(!!v)}
@@ -214,11 +217,7 @@ function AppPage() {
                 disabled={hiddenCount === 0}
               >
                 <span className="flex items-center gap-2">
-                  {showHidden ? (
-                    <EyeOff className="h-3.5 w-3.5 text-accent" />
-                  ) : (
-                    <Eye className="h-3.5 w-3.5 text-accent" />
-                  )}
+                  {showHidden ? <EyeOff className="h-3.5 w-3.5 text-accent" /> : <Eye className="h-3.5 w-3.5 text-accent" />}
                   Hidden ({hiddenCount})
                 </span>
               </DropdownMenuCheckboxItem>
@@ -235,17 +234,21 @@ function AppPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </section>
+      </header>
 
-      <section className="pb-10">
+      <section className="pb-12 pt-10">
+        <div className="mb-4 flex items-baseline justify-between gap-4">
+          <h2 className="font-display text-xl">Latest frames</h2>
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Newest first</p>
+        </div>
         <RecentMedia />
       </section>
 
       {recent.length > 0 && (
-        <section className="pb-10" aria-labelledby="recent-collections-heading">
-          <div className="mb-3 flex items-center justify-between">
-            <p id="recent-collections-heading" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Recently viewed</p>
-            <span className="text-xs text-muted-foreground">Your last opened spaces</span>
+        <section className="border-t border-line py-10" aria-labelledby="recent-collections-heading">
+          <div className="mb-4 flex items-baseline justify-between gap-4">
+            <h2 className="font-display text-xl">Recently viewed</h2>
+            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Last opened</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {recent.map(({ collection: c }) => {
@@ -255,16 +258,20 @@ function AppPage() {
                   key={c.id}
                   to="/c/$id"
                   params={{ id: c.id }}
-                  className="glass group flex min-w-0 items-center justify-between gap-3 rounded-2xl px-4 py-3 transition hover:ring-1 hover:ring-primary/30"
+                  className="group flex min-w-0 flex-col justify-between gap-4 border border-line px-4 py-4 transition hover:border-foreground/30"
                 >
                   <span className="min-w-0">
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-primary" /> : <Eye className="h-3.5 w-3.5 shrink-0 text-accent" />}
-                      <span className="truncate">{locked && c.nickname ? c.nickname : c.title}</span>
+                    <span className="block truncate font-display text-base leading-snug">
+                      {locked && c.nickname ? c.nickname : c.title}
                     </span>
-                    <span className="mt-1 block text-[11px] text-muted-foreground">{locked ? "PIN protected" : "Ready to open"}</span>
+                    <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                      {locked ? "PIN protected" : "Ready to open"}
+                    </span>
                   </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                  <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {locked ? <Lock className="h-3.5 w-3.5 text-primary" /> : <Eye className="h-3.5 w-3.5 text-accent" />}
+                    <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:text-foreground" />
+                  </span>
                 </Link>
               );
             })}
@@ -272,27 +279,28 @@ function AppPage() {
         </section>
       )}
 
+      <section className={recent.length > 0 ? "border-t border-line py-10" : "border-t border-line py-10"}>
+        <div className="mb-4 flex items-baseline justify-between gap-4">
+          <h2 className="font-display text-xl">The index</h2>
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+            {filtered.length} shown
+          </p>
+        </div>
 
-
-
-      <section>
         {isLoading ? (
           <div aria-label="Loading collections" className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-muted/60" />
+              <div key={i} className="aspect-[4/5] animate-pulse border border-line bg-muted/60" />
             ))}
           </div>
         ) : error ? (
-          <div role="alert" className="glass flex flex-col items-center justify-center rounded-2xl px-6 py-16 text-center">
+          <div role="alert" className="flex flex-col items-start justify-center border border-line px-6 py-14 text-center sm:items-center">
             <p className="font-display text-2xl">Your collections could not load</p>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">Check your connection and try again. Nothing in your gallery was changed.</p>
-            <Button variant="secondary" className="mt-6 rounded-full" onClick={() => qc.invalidateQueries({ queryKey: ["collections"] })}>Try again</Button>
+            <Button variant="secondary" className="mt-6 rounded-lg border border-input" onClick={() => qc.invalidateQueries({ queryKey: ["collections"] })}>Try again</Button>
           </div>
         ) : (
-          <motion.div
-            layout
-            className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4"
-          >
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {filtered.map((c) => {
               const card: CollectionCardData = { ...c, count: counts?.[c.id] };
               const locked = !!(c.is_private && c.has_pin && !unlocked[c.id]);
@@ -304,17 +312,15 @@ function AppPage() {
                     onDelete={() => deleteCollection(c.id, c.title)}
                     onUnhide={c.is_invisible ? () => unhideCollection(c.id) : undefined}
                   />
-
                 </div>
               );
             })}
-          </motion.div>
+          </div>
         )}
 
         {!isLoading && !error && filtered.length === 0 && (
-          <div className="glass mt-8 flex flex-col items-center rounded-2xl px-6 py-16 text-center">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <p className="mt-4 font-display text-2xl">{search ? "No collections found" : "Your gallery starts here"}</p>
+          <div className="mt-2 flex flex-col items-start border border-dashed border-line px-6 py-16 sm:items-center sm:text-center">
+            <p className="font-display text-2xl">{search ? "Nothing in the index matches" : "The archive is empty"}</p>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
               {search ? "Try another search or clear the filter." : "Create a collection to keep your photos and videos together."}
             </p>

@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { motion } from "motion/react";
-import { Archive, Download, EyeOff, Heart, Lock, Play, Sparkles } from "lucide-react";
+import { Archive, Download, EyeOff, Heart, Lock, Play } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 
 export const Route = createFileRoute("/_authenticated/about")({
@@ -71,61 +70,44 @@ const GUIDE_SECTIONS = [
 function AboutPage() {
   return (
     <AppShell>
-      <section className="pt-10 pb-12">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl"
-        >
-          <p className="text-sm uppercase tracking-[0.3em] text-primary">The Lumen guide</p>
-          <h1 className="mt-3 font-display text-5xl md:text-7xl">
-            Your memories,<br /><span className="text-gradient">beautifully kept.</span>
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
-            Lumen is a private cinematic gallery for the moments you want to keep close. Here is what each part of the experience does, with simple examples.
-          </p>
-        </motion.div>
+      <header className="border-b border-line pb-10 pt-10">
+        <p className="font-mono text-[11px] uppercase tracking-[0.32em] text-primary">The Lumen guide</p>
+        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-[1.08] md:text-6xl">
+          A private archive, kept with care.
+        </h1>
+        <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground">
+          Lumen is a private gallery for the moments you want to keep close. Here is what each part of the experience does, with simple examples.
+        </p>
+      </header>
 
-        <div className="mt-12 grid gap-4 md:grid-cols-2">
-          {GUIDE_SECTIONS.map(({ icon: Icon, eyebrow, title, body, example }, index) => (
-            <motion.article
-              key={title}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.05 * index }}
-              className="glass rounded-3xl p-6 md:p-7"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <span className="text-xs uppercase tracking-[0.22em] text-primary">{eyebrow}</span>
-                <Icon className="h-5 w-5 shrink-0 text-primary" />
-              </div>
-              <h2 className="mt-5 font-display text-2xl md:text-3xl">{title}</h2>
-              <p className="mt-3 leading-7 text-muted-foreground">{body}</p>
-              <p className="mt-5 border-l-2 border-primary/60 pl-4 text-sm leading-6 text-foreground/80">{example}</p>
-            </motion.article>
-          ))}
-        </div>
-
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="mt-5 glass-strong rounded-3xl p-6 md:p-8"
-        >
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-primary">
-                <Sparkles className="h-4 w-4" /> A private ritual
-              </p>
-              <h2 className="mt-2 font-display text-2xl">The Vault is for your best moments</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Double-click the Lumen logo to discover the hidden favorites space. It is intentionally separate from your home screen, so your most meaningful moments stay personal.
-              </p>
+      <section className="py-4">
+        {GUIDE_SECTIONS.map(({ icon: Icon, eyebrow, title, body, example }) => (
+          <article
+            key={title}
+            className="grid gap-5 border-b border-line py-9 md:grid-cols-[10rem_2rem_1fr] md:gap-8"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary md:pt-1.5">{eyebrow}</p>
+            <Icon className="hidden h-4 w-4 text-muted-foreground md:mt-1.5 md:block" aria-hidden />
+            <div className="max-w-2xl">
+              <h2 className="font-display text-2xl leading-snug">{title}</h2>
+              <p className="mt-3 text-sm leading-7 text-muted-foreground">{body}</p>
+              <p className="mt-4 border-l-2 border-accent/60 pl-4 font-mono text-[11px] uppercase leading-6 tracking-[0.08em] text-muted-foreground">{example}</p>
             </div>
-            <div className="shrink-0 text-4xl text-primary/80">✦</div>
+          </article>
+        ))}
+      </section>
+
+      <section className="border border-line p-6 md:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-2xl">
+            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary">A private ritual</p>
+            <h2 className="mt-2 font-display text-2xl">The Vault is for your best moments</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Double-click the Lumen logo to discover the hidden favorites space. It is intentionally separate from your home screen, so your most meaningful moments stay personal.
+            </p>
           </div>
-        </motion.section>
+          <p className="shrink-0 font-mono text-3xl text-primary/70">✦</p>
+        </div>
       </section>
     </AppShell>
   );
