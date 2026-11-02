@@ -12,6 +12,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({ meta: [{ title: "Sign in — Lumen" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s["next"] === "string" ? s["next"] : undefined,
+  }),
   component: AuthPage,
 });
 
@@ -26,14 +29,19 @@ function toEmail(input: string) {
 function AuthPage() {
   const navigate = useNavigate();
   const { session } = useSession();
+  const { next: rawNext } = Route.useSearch();
+  const next = rawNext ? oauthReturnPath(rawNext) : "/app";
+  const target = next === "/" ? "/app" : next;
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (session) navigate({ to: "/app", replace: true });
-  }, [session, navigate]);
+    if (!session) return;
+    if (target === "/app") navigate({ to: "/app", replace: true });
+    else window.location.replace(target);
+  }, [session, navigate, target]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
