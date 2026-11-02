@@ -8,6 +8,8 @@ import { AppShell } from "@/components/AppShell";
 import { CollectionCard, type CollectionCardData } from "@/components/CollectionCard";
 import { RecentMedia } from "@/components/RecentMedia";
 import { Input } from "@/components/ui/input";
+import { useWebMCP } from "use-webmcp-tool";
+import { runWebMCPTool } from "@/lib/webmcp-telemetry";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -135,6 +137,41 @@ function AppPage() {
       return true;
     });
   }, [data, search, showHidden, showLocked]);
+
+  useWebMCP({
+    name: "list_visible_collections",
+    description: "List the collections currently shown on the gallery screen, respecting search and filters.",
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    execute: () =>
+      runWebMCPTool("list_visible_collections", () => {
+        if (isLoading) return "Collections are still loading.";
+        if (filtered.length === 0) return "No collections shown.";
+        return filtered.map((c) => `${c.id}: ${c.is_private ? "[locked] " : ""}${c.title}`).join("\n");
+      }),
+  });
+
+  useWebMCP({
+    name: "filter_collections",
+    description: "Change the gallery view: search text, and whether hidden or locked collections are shown.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        search: { type: "string", description: "Search text for title or nickname; empty string clears it." },
+        show_hidden: { type: "boolean", description: "Show hidden collections." },
+        show_locked: { type: "boolean", description: "Show locked collections." },
+      },
+    },
+    execute: (args: { search?: unknown; show_hidden?: unknown; show_locked?: unknown }) =>
+      runWebMCPTool("filter_collections", () => {
+        if (args.search !== undefined && typeof args.search !== "string") throw new Error("search must be text.");
+        if (args.show_hidden !== undefined && typeof args.show_hidden !== "boolean") throw new Error("show_hidden must be true or false.");
+        if (args.show_locked !== undefined && typeof args.show_locked !== "boolean") throw new Error("show_locked must be true or false.");
+        if (args.search !== undefined) setSearch(args.search as string);
+        if (args.show_hidden !== undefined) setShowHidden(args.show_hidden as boolean);
+        if (args.show_locked !== undefined) setShowLocked(args.show_locked as boolean);
+        return "Gallery view updated.";
+      }),
+  });
 
   const hiddenCount = useMemo(
     () => (data ?? []).filter((c) => c.is_invisible).length,
