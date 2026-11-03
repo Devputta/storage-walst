@@ -12,3 +12,8 @@
 - [ ] Day 1: Refine gallery, collections, navigation, typography, and mobile spacing
 - [ ] Day 1: Preserve existing routes, authentication, content, and interactions
 - [ ] Day 1: Verify the finished preview and build
+
+## Uploads
+- [ ] Check backend pause status
+- [ ] Explain folder/file limits (1000 items, 1GB each)
+- [ ] Fix missing/failed uploads and speed up uploading
