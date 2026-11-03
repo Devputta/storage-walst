@@ -12,7 +12,21 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useServerFn } from "@tanstack/react-start";
 import { ensureMediaBucketLimit } from "@/lib/storage.functions";
 
-const CONCURRENCY = 4;
+const CONCURRENCY = 6;
+
+const EXT_MIME: Record<string, string> = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp",
+  heic: "image/heic", heif: "image/heif", avif: "image/avif", bmp: "image/bmp", tif: "image/tiff", tiff: "image/tiff",
+  mp4: "video/mp4", mov: "video/quicktime", m4v: "video/x-m4v", webm: "video/webm", mkv: "video/x-matroska",
+  avi: "video/x-msvideo", "3gp": "video/3gpp", mts: "video/mp2t", ts: "video/mp2t",
+};
+
+/** Some phones/browsers give files an empty type (e.g. .HEIC, .MOV); fall back to the extension. */
+function fileMime(f: File): string {
+  if (f.type) return f.type;
+  const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_MIME[ext] ?? "";
+}
 const MAX_COLLECTION_ITEMS = 1050;
 const PREVIEW_LIMIT = 80;
 
@@ -117,9 +131,14 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
 
   const onPick = (list: FileList | null) => {
     if (!list) return;
-    const arr = Array.from(list).filter(
-      (f) => f.type.startsWith("image") || f.type.startsWith("video"),
-    );
+    const all = Array.from(list);
+    const arr = all.filter((f) => {
+      const m = fileMime(f);
+      return m.startsWith("image") || m.startsWith("video");
+    });
+    if (arr.length < all.length) {
+      toast.info(`${all.length - arr.length} file${all.length - arr.length === 1 ? " isn't" : "s aren't"} a photo or video and was skipped.`);
+    }
     setFiles((prev) => {
       const slotsLeft = Math.max(0, MAX_COLLECTION_ITEMS - existingCount - prev.length);
       if (slotsLeft === 0) {
@@ -163,29 +182,44 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
       let completed = 0;
       let failed = 0;
 
+      const failedFiles: File[] = [];
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
       const uploadOne = async (f: File) => {
+        const ext = f.name.split(".").pop()?.toLowerCase() ?? "bin";
+        const path = `${userId}/${collectionId}/${crypto.randomUUID()}.${ext}`;
+        const mime = fileMime(f);
         try {
-          const ext = f.name.split(".").pop() ?? "bin";
-          const path = `${userId}/${collectionId}/${crypto.randomUUID()}.${ext}`;
-          const { error: upErr } = await supabase.storage.from("media").upload(path, f, {
-            contentType: f.type || "application/octet-stream",
-            upsert: false,
-          });
-          if (upErr) throw upErr;
-          const mediaType = f.type.startsWith("video") ? "video" : "image";
-          await supabase.from("media").insert({
+          let lastErr: unknown = null;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const { error: upErr } = await supabase.storage.from("media").upload(path, f, {
+              contentType: mime,
+              upsert: true,
+            });
+            if (!upErr) { lastErr = null; break; }
+            lastErr = upErr;
+            await sleep(800 * (attempt + 1));
+          }
+          if (lastErr) throw lastErr;
+          const mediaType = mime.startsWith("video") ? "video" : "image";
+          const { error: insErr } = await supabase.from("media").insert({
             user_id: userId,
             collection_id: collectionId,
             title: title || f.name.replace(/\.[^.]+$/, ""),
             description: description || null,
             storage_path: path,
             media_type: mediaType,
-            mime_type: f.type,
+            mime_type: mime,
             size_bytes: f.size,
           });
+          if (insErr) {
+            await supabase.storage.from("media").remove([path]);
+            throw insErr;
+          }
           if (!coverPath && mediaType === "image") coverPath = path;
         } catch (e) {
           failed++;
+          failedFiles.push(f);
           console.error("upload failed", f.name, e);
         } finally {
           completed++;
@@ -193,9 +227,10 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
         }
       };
 
-      // Concurrency-limited parallel uploads
-      const queue = [...files];
-      const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+      // Concurrency-limited parallel uploads (fewer at once for very large files)
+      const queue = [...files].sort((a, b) => a.size - b.size);
+      const big = files.some((f) => f.size > 200 * 1024 * 1024);
+      const workers = Array.from({ length: Math.min(big ? 3 : CONCURRENCY, queue.length) }, async () => {
         while (queue.length) {
           const next = queue.shift();
           if (!next) break;
@@ -209,10 +244,15 @@ export function UploadDialog({ collectionId }: { collectionId: string }) {
       }
       const ok = total - failed;
       if (ok) toast.success(`Uploaded ${ok} item${ok > 1 ? "s" : ""}`);
-      if (failed) toast.error(`${failed} file${failed > 1 ? "s" : ""} failed`);
       qc.invalidateQueries({ queryKey: ["media", collectionId] });
       qc.invalidateQueries({ queryKey: ["media-count", collectionId] });
       qc.invalidateQueries({ queryKey: ["collections"] });
+      if (failed) {
+        toast.error(`${failed} file${failed > 1 ? "s" : ""} didn't upload — they're kept here, press Upload to retry.`);
+        setFiles(failedFiles);
+        setDone(0);
+        return;
+      }
       reset(); setOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
