@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
 import { useSession } from "@/lib/auth";
 import { toast } from "sonner";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({ meta: [{ title: "Sign in — Lumen" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { next?: string } => ({
     next: typeof s["next"] === "string" ? s["next"] : undefined,
   }),
   component: AuthPage,
@@ -60,7 +61,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin + "/app",
+            emailRedirectTo: new URL(target, window.location.origin).href,
             data: { display_name: displayName },
           },
         });
@@ -79,7 +80,7 @@ function AuthPage() {
 
   const onGoogle = async () => {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/app" });
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: new URL(target, window.location.origin).href });
     if (result.error) {
       toast.error("Google sign-in failed");
       setBusy(false);
