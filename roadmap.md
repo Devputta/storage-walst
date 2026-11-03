@@ -14,6 +14,6 @@
 - [ ] Day 1: Verify the finished preview and build
 
 ## Uploads
-- [ ] Check backend pause status
-- [ ] Explain folder/file limits (1000 items, 1GB each)
-- [ ] Fix missing/failed uploads and speed up uploading
+- [x] Check backend pause status
+- [x] Explain folder/file limits (1000 items, 1GB each)
+- [x] Fix missing/failed uploads and speed up uploading
