@@ -93,21 +93,24 @@ function AuthPage() {
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6 }}
-        className="glass-strong w-full max-w-md rounded-3xl p-8 ring-glow"
+        className="glass-strong w-full max-w-md border border-border/70 p-8 shadow-none"
       >
         <div className="flex justify-center"><Logo enableSecret={false} /></div>
-        <h1 className="mt-6 text-center font-display text-3xl">
+        <p className="mt-6 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          {mode === "signin" ? "Private archive · entry" : "Private archive · new record"}
+        </p>
+        <h1 className="mt-2 text-center font-display text-2xl">
           {mode === "signin" ? "Welcome back" : "Create your space"}
         </h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          {mode === "signin" ? "Enter your private gallery." : "A cinematic home for your moments."}
+          {mode === "signin" ? "Enter your private gallery." : "A quiet home for your frames."}
         </p>
 
         <Button
           onClick={onGoogle}
           disabled={busy}
           variant="secondary"
-          className="mt-8 h-11 w-full rounded-xl"
+          className="mt-8 h-11 w-full"
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden>
             <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.5-1.7 4.5-5.5 4.5-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.8 14.7 3 12 3 6.9 3 2.8 7.1 2.8 12.2S6.9 21.4 12 21.4c6.9 0 9.5-4.8 9.5-9.4 0-.6-.1-1.1-.2-1.6H12z" />
@@ -115,7 +118,7 @@ function AuthPage() {
           Continue with Google
         </Button>
 
-        <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="my-6 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
           <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
         </div>
 
@@ -128,7 +131,7 @@ function AuthPage() {
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             required
-            className="h-11 rounded-xl bg-input/40"
+            className="h-11 bg-input/40"
           />
           <Input
             type="password"
@@ -137,9 +140,9 @@ function AuthPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="h-11 rounded-xl bg-input/40"
+            className="h-11 bg-input/40"
           />
-          <Button type="submit" disabled={busy} className="h-11 w-full rounded-xl text-base">
+          <Button type="submit" disabled={busy} className="h-11 w-full text-base">
             {mode === "signin" ? "Sign in" : "Create account"}
           </Button>
         </form>

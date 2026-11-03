@@ -296,13 +296,18 @@ function CollectionPage() {
       </div>
 
       <section className="mt-6 flex flex-wrap items-end justify-between gap-4">
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="font-display text-5xl md:text-6xl"
-        >
-          {needsPin ? (collection?.nickname ?? "Locked") : (collection?.title ?? "Collection")}
-        </motion.h1>
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            {needsPin ? "Locked record" : "Collection"} · {media?.length ?? 0} frames
+          </p>
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-2 font-display text-3xl md:text-5xl"
+          >
+            {needsPin ? (collection?.nickname ?? "Locked") : (collection?.title ?? "Collection")}
+          </motion.h1>
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="glass flex items-center rounded-full p-1">
