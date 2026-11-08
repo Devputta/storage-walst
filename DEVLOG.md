@@ -80,3 +80,9 @@ Newest entries go at the bottom; one entry per working session, dated.
   - Landing page: rebuilt as a quiet editorial intro — hairline top bar, numbered 01–03 notes instead of feature cards.
 - Created this development log (DEVLOG.md) and the task roadmap so progress is easy to track.
 - No database, auth, or stored data changes; all existing features preserved.
+
+## Day 10 — 2026-11-08 — Agent connection
+
+- Connected the published Lumina Vault agent tools to the Lovable workspace.
+- Confirmed the published site exposes its protected agent endpoint and OAuth discovery; collection data remains behind sign-in and existing permissions.
+- No app code, database, or stored media changed in this session.
