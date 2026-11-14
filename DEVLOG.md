@@ -86,3 +86,9 @@ Newest entries go at the bottom; one entry per working session, dated.
 - Connected the published Lumina Vault agent tools to the Lovable workspace.
 - Confirmed the published site exposes its protected agent endpoint and OAuth discovery; collection data remains behind sign-in and existing permissions.
 - No app code, database, or stored media changed in this session.
+
+## Day 11 — 2026-11-14 — Make hidden collections easier to find
+
+- Found that collections were still present, but Home hides hidden and PIN-protected collections by default.
+- Added a visible “Show all” action for every signed-in account; it clears the search and reveals the account’s full collection list without changing stored data or bypassing PIN locks.
+- No collections, photos, videos, or account settings were changed.
