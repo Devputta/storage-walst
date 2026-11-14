@@ -270,6 +270,22 @@ function AppPage() {
               </DropdownMenuLabel>
             </DropdownMenuContent>
           </DropdownMenu>
+          {data && filtered.length < data.length && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setSearch("");
+                setShowHidden(true);
+                setShowLocked(true);
+              }}
+              aria-label={`Show all ${data.length} collections`}
+              className="h-10 rounded-lg border border-input px-4 text-xs uppercase tracking-[0.14em]"
+            >
+              <Eye className="mr-2 h-3.5 w-3.5" />
+              Show all {data.length}
+            </Button>
+          )}
         </div>
       </header>
 
