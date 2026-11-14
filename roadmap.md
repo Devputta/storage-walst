@@ -21,5 +21,5 @@
 - [x] Create DEVLOG.md to track what is developed each day
 
 ## Collection visibility recovery
-- [ ] Make hidden and PIN-protected collections discoverable for every signed-in account
-- [ ] Verify the new control changes only the view and preserves all stored data
+- [x] Make hidden and PIN-protected collections discoverable for every signed-in account
+- [x] Verify the new control changes only the view and preserves all stored data
