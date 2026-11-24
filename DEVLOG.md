@@ -92,3 +92,10 @@ Newest entries go at the bottom; one entry per working session, dated.
 - Found that collections were still present, but Home hides hidden and PIN-protected collections by default.
 - Added a visible “Show all” action for every signed-in account; it clears the search and reveals the account’s full collection list without changing stored data or bypassing PIN locks.
 - No collections, photos, videos, or account settings were changed.
+
+## Day 12 — 2026-11-24 — Project guide, rules, disclaimer, and license
+
+- Replaced the outdated README with an accurate project guide covering the app, current technology, pages, local setup, configured upload limits, privacy cautions, and maintenance reminders.
+- Added a rights-reserved project notice rather than granting an unrequested open-source license; the holder is labeled “Project owner” until the legal name is supplied.
+- Added a plain-language disclaimer and reminders to protect member data, credentials, and independent backups.
+- No account data, collection records, or media files were changed.

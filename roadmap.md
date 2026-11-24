@@ -23,3 +23,10 @@
 ## Collection visibility recovery
 - [x] Make hidden and PIN-protected collections discoverable for every signed-in account
 - [x] Verify the new control changes only the view and preserves all stored data
+
+## Project documentation
+- [x] Replace the outdated README with accurate project, setup, privacy, rules, and disclaimer information
+- [x] Add a rights-reserved LICENSE notice using the generic project-owner label
+
+## Backend availability
+- [ ] Check why the Lovable Cloud backend is unavailable and restore service if it is paused and authorized
