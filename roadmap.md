@@ -29,4 +29,5 @@
 - [x] Add a rights-reserved LICENSE notice using the generic project-owner label
 
 ## Backend availability
-- [ ] Check why the Lovable Cloud backend is unavailable and restore service if it is paused and authorized
+- [x] Check why the Lovable Cloud backend is unavailable
+- [ ] Resume the paused backend — blocked until Cloud credits are added to the workspace

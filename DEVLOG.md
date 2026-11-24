@@ -98,4 +98,5 @@ Newest entries go at the bottom; one entry per working session, dated.
 - Replaced the outdated README with an accurate project guide covering the app, current technology, pages, local setup, configured upload limits, privacy cautions, and maintenance reminders.
 - Added a rights-reserved project notice rather than granting an unrequested open-source license; the holder is labeled “Project owner” until the legal name is supplied.
 - Added a plain-language disclaimer and reminders to protect member data, credentials, and independent backups.
+- Checked the reported outage: the hosted backend is paused, and the resume request was blocked because the workspace has no Cloud credits available. No backend data was changed.
 - No account data, collection records, or media files were changed.
